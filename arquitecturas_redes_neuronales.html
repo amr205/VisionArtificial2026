@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arquitecturas de Redes Neuronales — Clasificación de Imágenes</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #252535;
+    --accent: #6ee7f7;
+    --accent2: #f7c86e;
+    --accent3: #b06ef7;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    padding: 3rem 2rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(110,231,247,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: 5%;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(176,110,247,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--accent); }
+  .header-sub {
+    margin-top: 0.75rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-family: var(--mono);
+  }
+  .header-meta {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.3em 0.8em;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .badge-cyan  { background: rgba(110,231,247,0.12); color: var(--accent); border: 1px solid rgba(110,231,247,0.25); }
+  .badge-gold  { background: rgba(247,200,110,0.12); color: var(--accent2); border: 1px solid rgba(247,200,110,0.25); }
+  .badge-purple{ background: rgba(176,110,247,0.12); color: var(--accent3); border: 1px solid rgba(176,110,247,0.25); }
+
+  /* TIMELINE TABS */
+  .timeline-wrap {
+    position: relative;
+    padding: 2rem 2rem 0;
+  }
+  .timeline-bar {
+    position: absolute;
+    top: 2.85rem;
+    left: 2rem; right: 2rem;
+    height: 1px;
+    background: var(--border);
+  }
+  .tabs-scroll {
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: relative;
+    z-index: 1;
+  }
+  .tabs-scroll::-webkit-scrollbar { display: none; }
+  .tabs {
+    display: flex;
+    gap: 0;
+    min-width: max-content;
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 1.5rem 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .tab-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 2px solid var(--border);
+    transition: all 0.25s;
+    position: relative;
+    z-index: 1;
+  }
+  .tab-btn:hover .tab-dot { background: var(--muted); border-color: var(--muted); }
+  .tab-btn.active .tab-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px rgba(110,231,247,0.5); }
+  .tab-year {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+  .tab-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--muted);
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover .tab-name,
+  .tab-btn:hover .tab-year { color: var(--text); }
+  .tab-btn.active .tab-name { color: var(--accent); }
+  .tab-btn.active .tab-year { color: var(--accent); opacity: 0.7; }
+  .tab-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 0; height: 2px;
+    background: var(--accent);
+    transition: width 0.25s;
+  }
+  .tab-btn.active::after { width: 100%; }
+
+  /* PANELS */
+  .panels { padding: 0 2rem 4rem; }
+  .panel { display: none; animation: fadeUp 0.35s ease; }
+  .panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 900px) { .panel.active { grid-template-columns: 1fr; } }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .card-title-group {}
+  .arch-year {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.3rem;
+  }
+  .arch-name {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .arch-author {
+    margin-top: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .arch-venue {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--accent2);
+    margin-top: 0.2rem;
+    opacity: 0.8;
+  }
+
+  /* DIAGRAM */
+  .diagram-section { padding: 1.5rem; }
+  .diagram-section h3 {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .diagram-svg-wrap {
+    background: #0d0d15;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1.25rem;
+    overflow-x: auto;
+  }
+  .diagram-svg-wrap svg { display: block; margin: 0 auto; }
+
+  /* CODE */
+  .code-section { padding: 1.5rem; border-top: 1px solid var(--border); }
+  .code-section h3 {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  pre {
+    background: #0d0d15;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    line-height: 1.7;
+    color: #c8c8e8;
+  }
+  .kw  { color: #f7c86e; }
+  .fn  { color: #6ee7f7; }
+  .st  { color: #b06ef7; }
+  .cm  { color: #505070; font-style: italic; }
+  .nb  { color: #f7a06e; }
+
+  /* DETAILS ACCORDION */
+  .details-section { border-top: 1px solid var(--border); }
+  .details-toggle {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .details-toggle:hover { background: var(--surface2); }
+  .details-toggle .toggle-label { display: flex; align-items: center; gap: 0.5rem; }
+  .details-toggle .arrow {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    transition: transform 0.25s;
+  }
+  .details-toggle.open .arrow { transform: rotate(90deg); }
+  .details-body {
+    display: none;
+    padding: 0 1.5rem 1.5rem;
+    animation: fadeUp 0.25s ease;
+  }
+  .details-body.open { display: block; }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .detail-item {}
+  .detail-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+  }
+  .detail-val {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    padding: 0.25em 0.6em;
+    border-radius: 2px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .tag.highlight { color: var(--accent3); border-color: rgba(176,110,247,0.3); background: rgba(176,110,247,0.08); }
+  .novelty-box {
+    background: rgba(110,231,247,0.05);
+    border: 1px solid rgba(110,231,247,0.15);
+    border-radius: 3px;
+    padding: 0.9rem 1rem;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--text);
+    margin-top: 0.75rem;
+  }
+  .novelty-box strong { color: var(--accent); }
+
+  /* RIGHT COLUMN - spans both cards visually */
+  .right-col { display: flex; flex-direction: column; gap: 1.5rem; }
+  .full-card { grid-column: 1 / -1; }
+
+  /* SCROLL hint */
+  .scroll-hint {
+    text-align: center;
+    padding: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    header { padding: 2rem 1rem 1.5rem; }
+    .timeline-wrap { padding: 1.5rem 1rem 0; }
+    .timeline-bar { left: 1rem; right: 1rem; }
+    .panels { padding: 0 1rem 3rem; }
+    .tab-btn { padding: 0 1rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-label">// Material de clase · 2024</div>
+  <h1>Arquitecturas de Redes Neuronales<br>para <span>Clasificación de Imágenes</span></h1>
+  <p class="header-sub">Historia cronológica · Diagramas · Código</p>
+  <div class="header-meta">
+    <span class="badge badge-cyan">9 Arquitecturas</span>
+    <span class="badge badge-gold">1989 → 2021</span>
+    <span class="badge badge-purple">Deep Learning</span>
+  </div>
+</header>
+
+<!-- TIMELINE TABS -->
+<div class="timeline-wrap">
+  <div class="timeline-bar"></div>
+  <div class="tabs-scroll">
+    <div class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="lenet">
+        <div class="tab-dot"></div>
+        <div class="tab-year">1998</div>
+        <div class="tab-name">LeNet-5</div>
+      </button>
+      <button class="tab-btn" data-tab="alexnet">
+        <div class="tab-dot"></div>
+        <div class="tab-year">2012</div>
+        <div class="tab-name">AlexNet</div>
+      </button>
+      <button class="tab-btn" data-tab="vgg">
+        <div class="tab-dot"></div>
+        <div class="tab-year">2014</div>
+        <div class="tab-name">VGGNet</div>
+      </button>
+      <button class="tab-btn" data-tab="inception">
+        <div class="tab-dot"></div>
+        <div class="tab-year">2014</div>
+        <div class="tab-name">Inception v1</div>
+      </button>
+      <button class="tab-btn" data-tab="resnet">
+        <div class="tab-dot"></div>
+        <div class="tab-year">2015</div>
+        <div class="tab-name">ResNet</div>
+      </button>
+      <button class="tab-btn" data-tab="densenet">
+        <div class="tab-dot"></div>
+        <div class="tab-year">2017</div>
+        <div class="tab-name">DenseNet</div>
+      </button>
+      <button class="tab-btn" data-tab="mobilenet">
+        <div class="tab-dot"></div>
+        <div class="tab-year">2017</div>
+        <div class="tab-name">MobileNet</div>
+      </button>
+      <button class="tab-btn" data-tab="efficientnet">
+        <div class="tab-dot"></div>
+        <div class="tab-year">2019</div>
+        <div class="tab-name">EfficientNet</div>
+      </button>
+      <button class="tab-btn" data-tab="vit">
+        <div class="tab-dot"></div>
+        <div class="tab-year">2020</div>
+        <div class="tab-name">ViT</div>
+      </button>
+    </div>
+  </div>
+  <div class="scroll-hint">← scroll →</div>
+</div>
+
+<!-- PANELS -->
+<div class="panels">
+
+  <!-- LeNet-5 -->
+  <div class="panel active" id="panel-lenet">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 1998</div>
+          <div class="arch-name">LeNet-5</div>
+          <div class="arch-author">Yann LeCun, Léon Bottou, Yoshua Bengio, Patrick Haffner</div>
+          <div class="arch-venue">Proceedings of the IEEE</div>
+        </div>
+        <span class="badge badge-cyan">Pioneer</span>
+      </div>
+      <div class="diagram-section">
+        <h3>// Arquitectura</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="560" height="160" viewBox="0 0 560 160" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <defs>
+              <linearGradient id="gCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#6ee7f7;stop-opacity:0.7"/>
+                <stop offset="100%" style="stop-color:#6ee7f7;stop-opacity:0.3"/>
+              </linearGradient>
+              <linearGradient id="gGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#f7c86e;stop-opacity:0.7"/>
+                <stop offset="100%" style="stop-color:#f7c86e;stop-opacity:0.3"/>
+              </linearGradient>
+              <linearGradient id="gPurp" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#b06ef7;stop-opacity:0.7"/>
+                <stop offset="100%" style="stop-color:#b06ef7;stop-opacity:0.3"/>
+              </linearGradient>
+            </defs>
+            <!-- INPUT -->
+            <rect x="5" y="50" width="36" height="60" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="23" y="137" text-anchor="middle" fill="#7070a0" font-size="8">Input</text>
+            <text x="23" y="147" text-anchor="middle" fill="#7070a0" font-size="8">32×32</text>
+            <!-- Arrow -->
+            <line x1="41" y1="80" x2="58" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="58,76 64,80 58,84" fill="#252535"/>
+            <!-- C1 -->
+            <rect x="64" y="40" width="32" height="80" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <text x="80" y="137" text-anchor="middle" fill="#6ee7f7" font-size="8">C1</text>
+            <text x="80" y="147" text-anchor="middle" fill="#7070a0" font-size="8">Conv 5×5</text>
+            <!-- Arrow -->
+            <line x1="96" y1="80" x2="110" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="110,76 116,80 110,84" fill="#252535"/>
+            <!-- S2 -->
+            <rect x="116" y="50" width="28" height="60" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="130" y="137" text-anchor="middle" fill="#f7c86e" font-size="8">S2</text>
+            <text x="130" y="147" text-anchor="middle" fill="#7070a0" font-size="8">Pool 2×2</text>
+            <!-- Arrow -->
+            <line x1="144" y1="80" x2="158" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="158,76 164,80 158,84" fill="#252535"/>
+            <!-- C3 -->
+            <rect x="164" y="35" width="32" height="90" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <text x="180" y="137" text-anchor="middle" fill="#6ee7f7" font-size="8">C3</text>
+            <text x="180" y="147" text-anchor="middle" fill="#7070a0" font-size="8">Conv 5×5</text>
+            <!-- Arrow -->
+            <line x1="196" y1="80" x2="210" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="210,76 216,80 210,84" fill="#252535"/>
+            <!-- S4 -->
+            <rect x="216" y="50" width="28" height="60" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="230" y="137" text-anchor="middle" fill="#f7c86e" font-size="8">S4</text>
+            <text x="230" y="147" text-anchor="middle" fill="#7070a0" font-size="8">Pool 2×2</text>
+            <!-- Arrow -->
+            <line x1="244" y1="80" x2="258" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="258,76 264,80 258,84" fill="#252535"/>
+            <!-- C5 -->
+            <rect x="264" y="55" width="28" height="50" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="278" y="137" text-anchor="middle" fill="#6ee7f7" font-size="8">C5</text>
+            <text x="278" y="147" text-anchor="middle" fill="#7070a0" font-size="8">Conv 5×5</text>
+            <!-- Arrow -->
+            <line x1="292" y1="80" x2="306" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="306,76 312,80 306,84" fill="#252535"/>
+            <!-- F6 -->
+            <rect x="312" y="60" width="28" height="40" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="326" y="137" text-anchor="middle" fill="#b06ef7" font-size="8">F6</text>
+            <text x="326" y="147" text-anchor="middle" fill="#7070a0" font-size="8">FC 84</text>
+            <!-- Arrow -->
+            <line x1="340" y1="80" x2="354" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="354,76 360,80 354,84" fill="#252535"/>
+            <!-- OUTPUT -->
+            <rect x="360" y="65" width="60" height="30" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="390" y="137" text-anchor="middle" fill="#f7c86e" font-size="8">Output</text>
+            <text x="390" y="147" text-anchor="middle" fill="#7070a0" font-size="8">Softmax 10</text>
+            <!-- labels top -->
+            <text x="23" y="32" text-anchor="middle" fill="#505070" font-size="7">INPUT</text>
+            <text x="80" y="28" text-anchor="middle" fill="#505070" font-size="7">CONV×6</text>
+            <text x="130" y="38" text-anchor="middle" fill="#505070" font-size="7">AVG POOL</text>
+            <text x="180" y="23" text-anchor="middle" fill="#505070" font-size="7">CONV×16</text>
+            <text x="230" y="38" text-anchor="middle" fill="#505070" font-size="7">AVG POOL</text>
+            <text x="278" y="43" text-anchor="middle" fill="#505070" font-size="7">CONV×120</text>
+            <text x="326" y="48" text-anchor="middle" fill="#505070" font-size="7">FC</text>
+            <text x="390" y="53" text-anchor="middle" fill="#505070" font-size="7">FC+SOFTMAX</text>
+          </svg>
+        </div>
+      </div>
+      <div class="code-section">
+        <h3>// Python · Importar modelo</h3>
+        <pre><span class="cm"># LeNet-5 desde scratch con PyTorch</span>
+<span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+<span class="kw">class</span> <span class="fn">LeNet5</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="nb">self</span>, num_classes=<span class="st">10</span>):
+        <span class="fn">super</span>().<span class="fn">__init__</span>()
+        <span class="nb">self</span>.features = nn.<span class="fn">Sequential</span>(
+            nn.<span class="fn">Conv2d</span>(<span class="st">1</span>, <span class="st">6</span>, kernel_size=<span class="st">5</span>), nn.<span class="fn">Tanh</span>(),
+            nn.<span class="fn">AvgPool2d</span>(<span class="st">2</span>),
+            nn.<span class="fn">Conv2d</span>(<span class="st">6</span>, <span class="st">16</span>, kernel_size=<span class="st">5</span>), nn.<span class="fn">Tanh</span>(),
+            nn.<span class="fn">AvgPool2d</span>(<span class="st">2</span>),
+            nn.<span class="fn">Conv2d</span>(<span class="st">16</span>, <span class="st">120</span>, kernel_size=<span class="st">5</span>), nn.<span class="fn">Tanh</span>()
+        )
+        <span class="nb">self</span>.classifier = nn.<span class="fn">Sequential</span>(
+            nn.<span class="fn">Linear</span>(<span class="st">120</span>, <span class="st">84</span>), nn.<span class="fn">Tanh</span>(),
+            nn.<span class="fn">Linear</span>(<span class="st">84</span>, num_classes)
+        )
+    <span class="kw">def</span> <span class="fn">forward</span>(<span class="nb">self</span>, x):
+        x = <span class="nb">self</span>.features(x)
+        x = x.<span class="fn">flatten</span>(<span class="st">1</span>)
+        <span class="kw">return</span> <span class="nb">self</span>.classifier(x)
+
+model = <span class="fn">LeNet5</span>()</pre>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <div class="detail-label">Parámetros</div>
+              <div class="detail-val">~60,000</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Profundidad</div>
+              <div class="detail-val">7 capas</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Dataset original</div>
+              <div class="detail-val">MNIST (dígitos)</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Activación</div>
+              <div class="detail-val">Tanh / Sigmoid</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Conexiones residuales</div>
+              <div class="detail-val">No</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Tipo de pooling</div>
+              <div class="detail-val">Average Pooling</div>
+            </div>
+          </div>
+          <div class="tag-list">
+            <span class="tag">Conv2D</span>
+            <span class="tag">Average Pooling</span>
+            <span class="tag">Fully Connected</span>
+            <span class="tag">Tanh</span>
+            <span class="tag highlight">Sin Residuales</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué la hizo revolucionaria?</strong><br>
+            Fue la primera red neuronal convolucional demostrada en escala real. Introdujo el concepto de <em>compartir pesos</em> en filtros convolucionales, reduciendo enormemente los parámetros respecto a redes fully-connected. Sentó las bases del paradigma Conv → Pool → FC que dominaría durante décadas.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AlexNet -->
+  <div class="panel" id="panel-alexnet">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2012</div>
+          <div class="arch-name">AlexNet</div>
+          <div class="arch-author">Alex Krizhevsky, Ilya Sutskever, Geoffrey Hinton</div>
+          <div class="arch-venue">NeurIPS 2012 — "ImageNet Classification with Deep CNNs"</div>
+        </div>
+        <span class="badge badge-gold">Breakthrough</span>
+      </div>
+      <div class="diagram-section">
+        <h3>// Arquitectura</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="580" height="165" viewBox="0 0 580 165" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Input -->
+            <rect x="4" y="42" width="30" height="80" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="19" y="138" text-anchor="middle" fill="#7070a0" font-size="7.5">227²</text>
+            <!-- C1 11x11 -->
+            <line x1="34" y1="82" x2="50" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="50,78 56,82 50,86" fill="#252535"/>
+            <rect x="56" y="30" width="28" height="104" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.9"/>
+            <text x="70" y="149" text-anchor="middle" fill="#6ee7f7" font-size="7.5">C1</text>
+            <text x="70" y="158" text-anchor="middle" fill="#505070" font-size="7">11×11/4</text>
+            <!-- Pool -->
+            <line x1="84" y1="82" x2="97" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="97,78 103,82 97,86" fill="#252535"/>
+            <rect x="103" y="40" width="22" height="84" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <!-- C2 5x5 -->
+            <line x1="125" y1="82" x2="138" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="138,78 144,82 138,86" fill="#252535"/>
+            <rect x="144" y="24" width="28" height="116" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.9"/>
+            <text x="158" y="149" text-anchor="middle" fill="#6ee7f7" font-size="7.5">C2</text>
+            <text x="158" y="158" text-anchor="middle" fill="#505070" font-size="7">5×5</text>
+            <!-- Pool -->
+            <line x1="172" y1="82" x2="185" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="185,78 191,82 185,86" fill="#252535"/>
+            <rect x="191" y="38" width="22" height="88" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <!-- C3 -->
+            <line x1="213" y1="82" x2="226" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="226,78 232,82 226,86" fill="#252535"/>
+            <rect x="232" y="28" width="28" height="108" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <!-- C4 -->
+            <line x1="260" y1="82" x2="273" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="273,78 279,82 273,86" fill="#252535"/>
+            <rect x="279" y="30" width="28" height="104" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <!-- C5 -->
+            <line x1="307" y1="82" x2="320" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="320,78 326,82 320,86" fill="#252535"/>
+            <rect x="326" y="35" width="28" height="94" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <text x="350" y="149" text-anchor="middle" fill="#6ee7f7" font-size="7.5">C3-5</text>
+            <text x="350" y="158" text-anchor="middle" fill="#505070" font-size="7">3×3</text>
+            <!-- Pool -->
+            <line x1="354" y1="82" x2="367" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="367,78 373,82 367,86" fill="#252535"/>
+            <rect x="373" y="50" width="22" height="64" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <!-- FC1 -->
+            <line x1="395" y1="82" x2="408" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="408,78 414,82 408,86" fill="#252535"/>
+            <rect x="414" y="58" width="24" height="48" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="426" y="149" text-anchor="middle" fill="#b06ef7" font-size="7.5">FC</text>
+            <text x="426" y="158" text-anchor="middle" fill="#505070" font-size="7">4096</text>
+            <!-- FC2 -->
+            <line x1="438" y1="82" x2="451" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="451,78 457,82 451,86" fill="#252535"/>
+            <rect x="457" y="60" width="24" height="44" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <!-- Output -->
+            <line x1="481" y1="82" x2="494" y2="82" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="494,78 500,82 494,86" fill="#252535"/>
+            <rect x="500" y="68" width="60" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="530" y="149" text-anchor="middle" fill="#f7c86e" font-size="7.5">Softmax</text>
+            <text x="530" y="158" text-anchor="middle" fill="#505070" font-size="7">1000 cls</text>
+            <!-- Labels top -->
+            <text x="19" y="28" text-anchor="middle" fill="#505070" font-size="7">INPUT</text>
+            <text x="70" y="18" text-anchor="middle" fill="#505070" font-size="7">CONV 96</text>
+            <text x="114" y="28" text-anchor="middle" fill="#505070" font-size="7">MAX</text>
+            <text x="158" y="12" text-anchor="middle" fill="#505070" font-size="7">CONV 256</text>
+            <text x="202" y="26" text-anchor="middle" fill="#505070" font-size="7">MAX</text>
+            <text x="295" y="16" text-anchor="middle" fill="#505070" font-size="7">CONV 384/384/256</text>
+            <text x="384" y="38" text-anchor="middle" fill="#505070" font-size="7">MAX</text>
+            <!-- Dropout labels -->
+            <text x="418" y="46" text-anchor="middle" fill="#f7c86e" font-size="6.5">Dropout</text>
+            <text x="469" y="48" text-anchor="middle" fill="#f7c86e" font-size="6.5">Dropout</text>
+          </svg>
+        </div>
+      </div>
+      <div class="code-section">
+        <h3>// Python · Importar modelo</h3>
+        <pre><span class="cm"># AlexNet con torchvision (pretrained en ImageNet)</span>
+<span class="kw">import</span> torchvision.models <span class="kw">as</span> models
+
+model = models.<span class="fn">alexnet</span>(weights=<span class="st">'DEFAULT'</span>)
+
+<span class="cm"># Fine-tuning: reemplazar la cabeza clasificadora</span>
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+model.classifier[<span class="st">6</span>] = nn.<span class="fn">Linear</span>(<span class="st">4096</span>, num_classes)
+
+<span class="cm"># Con Keras/TF (reimplementación)</span>
+<span class="cm"># from tensorflow.keras.applications import ResNet50</span>
+<span class="cm"># (AlexNet no está en keras.applications directamente)</span></pre>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Parámetros</div><div class="detail-val">~61 millones</div></div>
+            <div class="detail-item"><div class="detail-label">Profundidad</div><div class="detail-val">8 capas (5 Conv + 3 FC)</div></div>
+            <div class="detail-item"><div class="detail-label">Dataset</div><div class="detail-val">ImageNet (1.2M imgs, 1000 clases)</div></div>
+            <div class="detail-item"><div class="detail-label">Activación</div><div class="detail-val">ReLU</div></div>
+            <div class="detail-item"><div class="detail-label">Conexiones residuales</div><div class="detail-val">No</div></div>
+            <div class="detail-item"><div class="detail-label">Pooling</div><div class="detail-val">Max Pooling</div></div>
+            <div class="detail-item"><div class="detail-label">Top-5 error</div><div class="detail-val">15.3% (ILSVRC 2012)</div></div>
+            <div class="detail-item"><div class="detail-label">Hardware</div><div class="detail-val">2× GTX 580 GPUs</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag">ReLU</span>
+            <span class="tag">Max Pooling</span>
+            <span class="tag highlight">Dropout</span>
+            <span class="tag highlight">Data Augmentation</span>
+            <span class="tag">LRN</span>
+            <span class="tag">GPU Training</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué la hizo revolucionaria?</strong><br>
+            Ganó ImageNet 2012 con una ventaja de 10.8 puntos porcentuales sobre el segundo lugar, iniciando la era del deep learning moderno. Fue la primera en usar <em>ReLU</em> (en lugar de Tanh), <em>Dropout</em> como regularización, y entrenamiento en GPU a escala. También introdujo Local Response Normalization (LRN) y data augmentation agresivo.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VGGNet -->
+  <div class="panel" id="panel-vgg">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2014</div>
+          <div class="arch-name">VGGNet</div>
+          <div class="arch-author">Karen Simonyan, Andrew Zisserman</div>
+          <div class="arch-venue">ICLR 2015 — Visual Geometry Group, Oxford</div>
+        </div>
+        <span class="badge badge-cyan">Elegance</span>
+      </div>
+      <div class="diagram-section">
+        <h3>// Arquitectura VGG-16</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="560" height="165" viewBox="0 0 560 165" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Bloque 1 -->
+            <rect x="4" y="45" width="22" height="70" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <rect x="28" y="45" width="22" height="70" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="27" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B1</text>
+            <text x="27" y="140" text-anchor="middle" fill="#505070" font-size="7">64ch</text>
+            <!-- pool -->
+            <rect x="54" y="58" width="14" height="44" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <!-- Bloque 2 -->
+            <rect x="72" y="42" width="22" height="76" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <rect x="96" y="42" width="22" height="76" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="96" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B2</text>
+            <text x="96" y="140" text-anchor="middle" fill="#505070" font-size="7">128ch</text>
+            <!-- pool -->
+            <rect x="122" y="55" width="14" height="50" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <!-- Bloque 3 -->
+            <rect x="140" y="38" width="18" height="84" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <rect x="160" y="38" width="18" height="84" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <rect x="180" y="38" width="18" height="84" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="170" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B3</text>
+            <text x="170" y="140" text-anchor="middle" fill="#505070" font-size="7">256ch</text>
+            <!-- pool -->
+            <rect x="202" y="52" width="14" height="56" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <!-- Bloque 4 -->
+            <rect x="220" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <rect x="240" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <rect x="260" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="250" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B4</text>
+            <text x="250" y="140" text-anchor="middle" fill="#505070" font-size="7">512ch</text>
+            <!-- pool -->
+            <rect x="282" y="48" width="14" height="64" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <!-- Bloque 5 -->
+            <rect x="300" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <rect x="320" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <rect x="340" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="330" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B5</text>
+            <text x="330" y="140" text-anchor="middle" fill="#505070" font-size="7">512ch</text>
+            <!-- pool -->
+            <rect x="362" y="50" width="14" height="60" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <!-- FC layers -->
+            <line x1="376" y1="80" x2="388" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="388,76 394,80 388,84" fill="#252535"/>
+            <rect x="394" y="60" width="24" height="40" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="406" y="130" text-anchor="middle" fill="#b06ef7" font-size="7">FC</text>
+            <text x="406" y="140" text-anchor="middle" fill="#505070" font-size="7">4096</text>
+            <line x1="418" y1="80" x2="428" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="428,76 434,80 428,84" fill="#252535"/>
+            <rect x="434" y="62" width="24" height="36" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <line x1="458" y1="80" x2="468" y2="80" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="468,76 474,80 468,84" fill="#252535"/>
+            <rect x="474" y="68" width="60" height="24" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="504" y="130" text-anchor="middle" fill="#f7c86e" font-size="7">Softmax</text>
+            <text x="504" y="140" text-anchor="middle" fill="#505070" font-size="7">1000</text>
+            <!-- Label all 3×3 -->
+            <text x="280" y="16" text-anchor="middle" fill="#505070" font-size="7">Todos los Conv son 3×3 — la simplicidad es la clave</text>
+          </svg>
+        </div>
+      </div>
+      <div class="code-section">
+        <h3>// Python · Importar modelo</h3>
+        <pre><span class="cm"># VGG-16 y VGG-19 con torchvision</span>
+<span class="kw">import</span> torchvision.models <span class="kw">as</span> models
+
+<span class="cm"># VGG-16</span>
+vgg16 = models.<span class="fn">vgg16</span>(weights=<span class="st">'DEFAULT'</span>)
+
+<span class="cm"># VGG-19 (más profunda)</span>
+vgg19 = models.<span class="fn">vgg19</span>(weights=<span class="st">'DEFAULT'</span>)
+
+<span class="cm"># Con Keras</span>
+<span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> VGG16
+model = <span class="fn">VGG16</span>(weights=<span class="st">'imagenet'</span>, include_top=<span class="nb">True</span>)
+
+<span class="cm"># Fine-tuning en Keras</span>
+model_ft = <span class="fn">VGG16</span>(weights=<span class="st">'imagenet'</span>, include_top=<span class="nb">False</span>)</pre>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Parámetros</div><div class="detail-val">VGG16: ~138M · VGG19: ~144M</div></div>
+            <div class="detail-item"><div class="detail-label">Profundidad</div><div class="detail-val">16-19 capas</div></div>
+            <div class="detail-item"><div class="detail-label">Filtros Conv</div><div class="detail-val">Todos 3×3, stride 1</div></div>
+            <div class="detail-item"><div class="detail-label">Activación</div><div class="detail-val">ReLU</div></div>
+            <div class="detail-item"><div class="detail-label">Residuales</div><div class="detail-val">No</div></div>
+            <div class="detail-item"><div class="detail-label">Top-5 error</div><div class="detail-val">7.3% ILSVRC 2014</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag">3×3 Conv</span>
+            <span class="tag">Max Pooling</span>
+            <span class="tag">ReLU</span>
+            <span class="tag highlight">Profundidad uniforme</span>
+            <span class="tag">Dropout</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué la hizo revolucionaria?</strong><br>
+            Demostró que la <em>profundidad</em> importa más que el tamaño de los filtros. Usar stacks de filtros 3×3 en lugar de filtros grandes (7×7 o 11×11) tiene el mismo campo receptivo con menos parámetros y más no-linealidades. Su diseño uniforme y predecible la convirtió en el estándar de referencia para transfer learning durante años.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inception / GoogLeNet -->
+  <div class="panel" id="panel-inception">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2014</div>
+          <div class="arch-name">Inception v1 (GoogLeNet)</div>
+          <div class="arch-author">Christian Szegedy et al. — Google</div>
+          <div class="arch-venue">CVPR 2015 — "Going Deeper with Convolutions"</div>
+        </div>
+        <span class="badge badge-purple">Multi-scale</span>
+      </div>
+      <div class="diagram-section">
+        <h3>// Módulo Inception</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="520" height="200" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Input -->
+            <rect x="195" y="4" width="90" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="240" y="22" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold">Input</text>
+            <!-- 4 branches -->
+            <!-- Branch 1: 1x1 -->
+            <line x1="215" y1="32" x2="50" y2="72" stroke="#6ee7f7" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+            <rect x="18" y="72" width="64" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="50" y="86" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Conv 1×1</text>
+            <!-- Branch 2: 1x1 + 3x3 -->
+            <line x1="233" y1="32" x2="163" y2="72" stroke="#6ee7f7" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+            <rect x="131" y="72" width="64" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="163" y="86" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Conv 1×1</text>
+            <line x1="163" y1="100" x2="163" y2="118" stroke="#6ee7f7" stroke-width="1.5"/>
+            <polygon points="159,118 163,124 167,118" fill="#6ee7f7"/>
+            <rect x="131" y="124" width="64" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
+            <text x="163" y="138" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Conv 3×3</text>
+            <!-- Branch 3: 1x1 + 5x5 -->
+            <line x1="250" y1="32" x2="280" y2="72" stroke="#b06ef7" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+            <rect x="248" y="72" width="64" height="28" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="280" y="86" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Conv 1×1</text>
+            <line x1="280" y1="100" x2="280" y2="118" stroke="#b06ef7" stroke-width="1.5"/>
+            <polygon points="276,118 280,124 284,118" fill="#b06ef7"/>
+            <rect x="248" y="124" width="64" height="28" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.8"/>
+            <text x="280" y="138" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Conv 5×5</text>
+            <!-- Branch 4: MaxPool + 1x1 -->
+            <line x1="265" y1="32" x2="395" y2="72" stroke="#f7c86e" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+            <rect x="362" y="72" width="70" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="397" y="86" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">MaxPool 3×3</text>
+            <line x1="397" y1="100" x2="397" y2="118" stroke="#f7c86e" stroke-width="1.5"/>
+            <polygon points="393,118 397,124 401,118" fill="#f7c86e"/>
+            <rect x="364" y="124" width="66" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.8"/>
+            <text x="397" y="138" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Conv 1×1</text>
+            <!-- Concat -->
+            <line x1="50" y1="100" x2="50" y2="166" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
+            <line x1="50" y1="166" x2="240" y2="166" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
+            <line x1="163" y1="152" x2="163" y2="166" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
+            <line x1="280" y1="152" x2="280" y2="166" stroke="#b06ef7" stroke-width="1" opacity="0.5"/>
+            <line x1="397" y1="152" x2="397" y2="166" stroke="#f7c86e" stroke-width="1" opacity="0.5"/>
+            <line x1="280" y1="166" x2="397" y2="166" stroke="#b06ef7" stroke-width="1" opacity="0.5"/>
+            <line x1="240" y1="166" x2="330" y2="166" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
+            <!-- Concat box -->
+            <rect x="160" y="170" width="160" height="26" rx="2" fill="#1a1a26" stroke="#505070" stroke-width="1"/>
+            <text x="240" y="186" text-anchor="middle" fill="#e8e8f0" font-size="9" font-weight="bold">Filter Concatenation</text>
+            <!-- Labels -->
+            <text x="50" y="62" text-anchor="middle" fill="#6ee7f7" font-size="7">1×1 only</text>
+            <text x="163" y="62" text-anchor="middle" fill="#6ee7f7" font-size="7">3×3 reduce</text>
+            <text x="280" y="62" text-anchor="middle" fill="#b06ef7" font-size="7">5×5 reduce</text>
+            <text x="397" y="62" text-anchor="middle" fill="#f7c86e" font-size="7">pool proj</text>
+          </svg>
+        </div>
+      </div>
+      <div class="code-section">
+        <h3>// Python · Importar modelo</h3>
+        <pre><span class="cm"># GoogLeNet / Inception v1</span>
+<span class="kw">import</span> torchvision.models <span class="kw">as</span> models
+
+model = models.<span class="fn">googlenet</span>(weights=<span class="st">'DEFAULT'</span>)
+
+<span class="cm"># Inception v3 (más común para transfer learning)</span>
+model_v3 = models.<span class="fn">inception_v3</span>(weights=<span class="st">'DEFAULT'</span>)
+
+<span class="cm"># Con Keras</span>
+<span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> InceptionV3
+model = <span class="fn">InceptionV3</span>(weights=<span class="st">'imagenet'</span>, include_top=<span class="nb">True</span>)</pre>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Parámetros</div><div class="detail-val">~6.8M (GoogLeNet)</div></div>
+            <div class="detail-item"><div class="detail-label">Profundidad</div><div class="detail-val">22 capas (con pesos)</div></div>
+            <div class="detail-item"><div class="detail-label">Módulos Inception</div><div class="detail-val">9 módulos</div></div>
+            <div class="detail-item"><div class="detail-label">Clasificadores aux.</div><div class="detail-val">2 salidas auxiliares</div></div>
+            <div class="detail-item"><div class="detail-label">Residuales</div><div class="detail-val">No (pero sí aux. losses)</div></div>
+            <div class="detail-item"><div class="detail-label">Top-5 error</div><div class="detail-val">6.67% ILSVRC 2014</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Módulo Inception</span>
+            <span class="tag">Conv 1×1</span>
+            <span class="tag">Conv 3×3</span>
+            <span class="tag">Conv 5×5</span>
+            <span class="tag highlight">Reducción de dimensión</span>
+            <span class="tag">Clasificadores Auxiliares</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué la hizo revolucionaria?</strong><br>
+            Introdujo el <em>módulo Inception</em>: procesar la misma entrada con filtros de distintos tamaños en paralelo y concatenar los resultados. Las convoluciones 1×1 antes de los filtros grandes actúan como "cuellos de botella" reduciendo el costo computacional. Logró más precisión que AlexNet con 12× menos parámetros.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ResNet -->
+  <div class="panel" id="panel-resnet">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2015</div>
+          <div class="arch-name">ResNet</div>
+          <div class="arch-author">Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun — Microsoft Research</div>
+          <div class="arch-venue">CVPR 2016 — "Deep Residual Learning for Image Recognition"</div>
+        </div>
+        <span class="badge badge-gold">Residual</span>
+      </div>
+      <div class="diagram-section">
+        <h3>// Bloque Residual</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="520" height="180" viewBox="0 0 520 180" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Main path -->
+            <rect x="180" y="10" width="120" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="240" y="28" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold">x  (Entrada)</text>
+            <!-- Arrow down -->
+            <line x1="240" y1="38" x2="240" y2="56" stroke="#6ee7f7" stroke-width="1.5"/>
+            <polygon points="236,56 240,62 244,56" fill="#6ee7f7"/>
+            <!-- Conv 1 -->
+            <rect x="180" y="62" width="120" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="240" y="80" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold">Conv 3×3 + BN + ReLU</text>
+            <line x1="240" y1="90" x2="240" y2="108" stroke="#6ee7f7" stroke-width="1.5"/>
+            <polygon points="236,108 240,114 244,108" fill="#6ee7f7"/>
+            <!-- Conv 2 -->
+            <rect x="180" y="114" width="120" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <text x="240" y="132" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold">Conv 3×3 + BN</text>
+            <!-- Skip connection -->
+            <line x1="240" y1="24" x2="400" y2="24" stroke="#f7c86e" stroke-width="2" stroke-dasharray="6,3"/>
+            <line x1="400" y1="24" x2="400" y2="142" stroke="#f7c86e" stroke-width="2" stroke-dasharray="6,3"/>
+            <line x1="400" y1="142" x2="315" y2="142" stroke="#f7c86e" stroke-width="2" stroke-dasharray="6,3"/>
+            <polygon points="315,138 309,142 315,146" fill="#f7c86e"/>
+            <!-- Plus circle -->
+            <circle cx="340" cy="142" r="14" fill="#1a1a26" stroke="#f7c86e" stroke-width="2"/>
+            <text x="340" y="147" text-anchor="middle" fill="#f7c86e" font-size="14" font-weight="bold">+</text>
+            <line x1="354" y1="142" x2="370" y2="142" stroke="#6ee7f7" stroke-width="1.5"/>
+            <polygon points="370,138 376,142 370,146" fill="#6ee7f7"/>
+            <!-- ReLU output -->
+            <rect x="376" y="128" width="80" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="416" y="146" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold">ReLU Output</text>
+            <!-- Skip label -->
+            <text x="400" y="18" text-anchor="middle" fill="#f7c86e" font-size="8">Skip Connection (identity)</text>
+            <!-- F(x) label -->
+            <text x="150" y="110" text-anchor="middle" fill="#6ee7f7" font-size="9">F(x)</text>
+            <text x="130" y="145" text-anchor="middle" fill="#e8e8f0" font-size="9">F(x) + x</text>
+            <!-- Parenntesis explanation -->
+            <text x="240" y="175" text-anchor="middle" fill="#505070" font-size="8">La red aprende el residuo F(x) = H(x) − x, no el mapeo directo H(x)</text>
+          </svg>
+        </div>
+      </div>
+      <div class="code-section">
+        <h3>// Python · Importar modelo</h3>
+        <pre><span class="cm"># ResNet — múltiples profundidades disponibles</span>
+<span class="kw">import</span> torchvision.models <span class="kw">as</span> models
+
+resnet50  = models.<span class="fn">resnet50</span>(weights=<span class="st">'DEFAULT'</span>)   <span class="cm"># más usado</span>
+resnet18  = models.<span class="fn">resnet18</span>(weights=<span class="st">'DEFAULT'</span>)   <span class="cm"># más ligero</span>
+resnet101 = models.<span class="fn">resnet101</span>(weights=<span class="st">'DEFAULT'</span>)  <span class="cm"># más preciso</span>
+resnet152 = models.<span class="fn">resnet152</span>(weights=<span class="st">'DEFAULT'</span>)
+
+<span class="cm"># Con Keras</span>
+<span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> ResNet50
+model = <span class="fn">ResNet50</span>(weights=<span class="st">'imagenet'</span>, include_top=<span class="nb">True</span>)</pre>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Parámetros (ResNet50)</div><div class="detail-val">~25.6M</div></div>
+            <div class="detail-item"><div class="detail-label">Profundidad</div><div class="detail-val">18 / 34 / 50 / 101 / 152</div></div>
+            <div class="detail-item"><div class="detail-label">Normalización</div><div class="detail-val">Batch Normalization</div></div>
+            <div class="detail-item"><div class="detail-label">Activación</div><div class="detail-val">ReLU</div></div>
+            <div class="detail-item"><div class="detail-label">Residuales</div><div class="detail-val">✓ Sí — skip connections</div></div>
+            <div class="detail-item"><div class="detail-label">Top-5 error</div><div class="detail-val">3.57% ILSVRC 2015</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Skip Connections</span>
+            <span class="tag highlight">Batch Normalization</span>
+            <span class="tag">Bottleneck Block</span>
+            <span class="tag">Global Avg Pool</span>
+            <span class="tag">ReLU</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué la hizo revolucionaria?</strong><br>
+            Resolvió el problema del <em>vanishing gradient</em> en redes muy profundas con las <em>skip connections</em>: el gradiente puede fluir directamente hacia atrás sin degradarse. Permitió entrenar redes de hasta 1000 capas. Ganó ILSVRC 2015 con un error menor al de los humanos (~5%). Se convirtió en el backbone estándar para visión por computadora.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DenseNet -->
+  <div class="panel" id="panel-densenet">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2017</div>
+          <div class="arch-name">DenseNet</div>
+          <div class="arch-author">Gao Huang, Zhuang Liu, Laurens van der Maaten, Kilian Weinberger</div>
+          <div class="arch-venue">CVPR 2017 — "Densely Connected Convolutional Networks"</div>
+        </div>
+        <span class="badge badge-cyan">Dense</span>
+      </div>
+      <div class="diagram-section">
+        <h3>// Bloque Denso (Dense Block)</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="520" height="170" viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- 4 layers -->
+            <rect x="10" y="70" width="70" height="30" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="45" y="89" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Layer 1</text>
+            <rect x="130" y="70" width="70" height="30" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="165" y="89" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Layer 2</text>
+            <rect x="250" y="70" width="70" height="30" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="285" y="89" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Layer 3</text>
+            <rect x="370" y="70" width="70" height="30" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="405" y="89" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Layer 4</text>
+            <!-- Direct connections -->
+            <line x1="80" y1="85" x2="130" y2="85" stroke="#6ee7f7" stroke-width="2"/>
+            <polygon points="124,81 130,85 124,89" fill="#6ee7f7"/>
+            <line x1="200" y1="85" x2="250" y2="85" stroke="#6ee7f7" stroke-width="2"/>
+            <polygon points="244,81 250,85 244,89" fill="#6ee7f7"/>
+            <line x1="320" y1="85" x2="370" y2="85" stroke="#6ee7f7" stroke-width="2"/>
+            <polygon points="364,81 370,85 364,89" fill="#6ee7f7"/>
+            <!-- L1 → L3 -->
+            <path d="M 45 100 Q 45 130 165 130 Q 285 130 285 100" fill="none" stroke="#b06ef7" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <!-- L1 → L4 -->
+            <path d="M 45 100 Q 45 148 285 148 Q 400 148 405 100" fill="none" stroke="#f7c86e" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <!-- L2 → L4 -->
+            <path d="M 165 100 Q 165 118 285 118 Q 395 118 405 100" fill="none" stroke="#b06ef7" stroke-width="1" stroke-dasharray="4,3" opacity="0.7"/>
+            <!-- Output -->
+            <line x1="440" y1="85" x2="490" y2="85" stroke="#f7c86e" stroke-width="2"/>
+            <polygon points="484,81 490,85 484,89" fill="#f7c86e"/>
+            <rect x="490" y="71" width="24" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="502" y="89" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Out</text>
+            <!-- Labels -->
+            <text x="240" y="18" text-anchor="middle" fill="#505070" font-size="8">Cada capa recibe los feature maps de TODAS las capas anteriores</text>
+            <text x="240" y="32" text-anchor="middle" fill="#505070" font-size="8">La concatenación incrementa el número de canales progresivamente</text>
+            <text x="110" y="162" text-anchor="middle" fill="#b06ef7" font-size="7">── skip L1→L3, L2→L4</text>
+            <text x="320" y="162" text-anchor="middle" fill="#f7c86e" font-size="7">── skip L1→L4</text>
+          </svg>
+        </div>
+      </div>
+      <div class="code-section">
+        <h3>// Python · Importar modelo</h3>
+        <pre><span class="cm"># DenseNet con torchvision</span>
+<span class="kw">import</span> torchvision.models <span class="kw">as</span> models
+
+densenet121 = models.<span class="fn">densenet121</span>(weights=<span class="st">'DEFAULT'</span>)
+densenet169 = models.<span class="fn">densenet169</span>(weights=<span class="st">'DEFAULT'</span>)
+densenet201 = models.<span class="fn">densenet201</span>(weights=<span class="st">'DEFAULT'</span>)
+
+<span class="cm"># Con Keras</span>
+<span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> DenseNet121
+model = <span class="fn">DenseNet121</span>(weights=<span class="st">'imagenet'</span>)</pre>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Parámetros (DenseNet121)</div><div class="detail-val">~8M</div></div>
+            <div class="detail-item"><div class="detail-label">Profundidad</div><div class="detail-val">121 / 169 / 201 / 264</div></div>
+            <div class="detail-item"><div class="detail-label">Growth rate (k)</div><div class="detail-val">32 filtros por capa</div></div>
+            <div class="detail-item"><div class="detail-label">Residuales</div><div class="detail-val">✓ Densas (todos con todos)</div></div>
+            <div class="detail-item"><div class="detail-label">Normalización</div><div class="detail-val">Batch Normalization</div></div>
+            <div class="detail-item"><div class="detail-label">Operación de fusión</div><div class="detail-val">Concatenación (no suma)</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Dense Connections</span>
+            <span class="tag">Concatenación</span>
+            <span class="tag">Batch Norm</span>
+            <span class="tag">Growth Rate</span>
+            <span class="tag">Transition Layers</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué la hizo revolucionaria?</strong><br>
+            Llevó las skip connections al extremo: cada capa está conectada con <em>todas</em> las capas subsiguientes. A diferencia de ResNet que <em>suma</em> los features, DenseNet los <em>concatena</em>, preservando toda la información. Esto reduce enormemente los parámetros necesarios gracias a la reutilización de features y mejora el flujo del gradiente.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MobileNet -->
+  <div class="panel" id="panel-mobilenet">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2017</div>
+          <div class="arch-name">MobileNet</div>
+          <div class="arch-author">Andrew G. Howard et al. — Google</div>
+          <div class="arch-venue">arXiv 2017 — "MobileNets: Efficient CNNs for Mobile Applications"</div>
+        </div>
+        <span class="badge badge-purple">Edge / Mobile</span>
+      </div>
+      <div class="diagram-section">
+        <h3>// Depthwise Separable Convolution</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="520" height="160" viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Standard Conv -->
+            <text x="115" y="18" text-anchor="middle" fill="#505070" font-size="8">Conv Estándar</text>
+            <rect x="20" y="28" width="70" height="50" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <text x="55" y="52" text-anchor="middle" fill="#6ee7f7" font-size="8">Input</text>
+            <text x="55" y="64" text-anchor="middle" fill="#7070a0" font-size="7">H×W×Cin</text>
+            <line x1="90" y1="53" x2="106" y2="53" stroke="#6ee7f7" stroke-width="1.5"/>
+            <polygon points="106,49 112,53 106,57" fill="#6ee7f7"/>
+            <rect x="112" y="28" width="70" height="50" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="147" y="48" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Conv Dk×Dk</text>
+            <text x="147" y="62" text-anchor="middle" fill="#0a0a0f" font-size="7">Cin × Cout filtros</text>
+            <text x="147" y="72" text-anchor="middle" fill="#0a0a0f" font-size="7">Dk²×Cin×Cout MACs</text>
+            <line x1="182" y1="53" x2="198" y2="53" stroke="#6ee7f7" stroke-width="1.5"/>
+            <polygon points="198,49 204,53 198,57" fill="#6ee7f7"/>
+            <rect x="204" y="28" width="70" height="50" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.6"/>
+            <text x="239" y="52" text-anchor="middle" fill="#f7c86e" font-size="8">Output</text>
+            <text x="239" y="64" text-anchor="middle" fill="#7070a0" font-size="7">H×W×Cout</text>
+            <!-- Separator -->
+            <line x1="10" y1="90" x2="510" y2="90" stroke="#252535" stroke-width="1" stroke-dasharray="6,4"/>
+            <!-- Depthwise Separable -->
+            <text x="115" y="104" text-anchor="middle" fill="#505070" font-size="8">Depthwise Separable (MobileNet)</text>
+            <rect x="20" y="114" width="70" height="38" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <text x="55" y="135" text-anchor="middle" fill="#6ee7f7" font-size="8">H×W×Cin</text>
+            <line x1="90" y1="133" x2="104" y2="133" stroke="#6ee7f7" stroke-width="1.5"/>
+            <polygon points="104,129 110,133 104,137" fill="#6ee7f7"/>
+            <rect x="110" y="114" width="80" height="38" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="150" y="130" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Depthwise</text>
+            <text x="150" y="143" text-anchor="middle" fill="#0a0a0f" font-size="7">Dk²×Cin MACs</text>
+            <line x1="190" y1="133" x2="204" y2="133" stroke="#b06ef7" stroke-width="1.5"/>
+            <polygon points="204,129 210,133 204,137" fill="#b06ef7"/>
+            <rect x="210" y="114" width="80" height="38" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="250" y="130" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Pointwise</text>
+            <text x="250" y="143" text-anchor="middle" fill="#0a0a0f" font-size="7">1×1 Conv, Cout MACs</text>
+            <line x1="290" y1="133" x2="304" y2="133" stroke="#6ee7f7" stroke-width="1.5"/>
+            <polygon points="304,129 310,133 304,137" fill="#6ee7f7"/>
+            <rect x="310" y="114" width="70" height="38" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.6"/>
+            <text x="345" y="135" text-anchor="middle" fill="#f7c86e" font-size="8">H×W×Cout</text>
+            <!-- Reduction label -->
+            <text x="430" y="130" text-anchor="middle" fill="#b06ef7" font-size="9" font-weight="bold">~8-9×</text>
+            <text x="430" y="143" text-anchor="middle" fill="#7070a0" font-size="7">reducción de costo</text>
+          </svg>
+        </div>
+      </div>
+      <div class="code-section">
+        <h3>// Python · Importar modelo</h3>
+        <pre><span class="cm"># MobileNet v2 y v3 con torchvision</span>
+<span class="kw">import</span> torchvision.models <span class="kw">as</span> models
+
+mv2 = models.<span class="fn">mobilenet_v2</span>(weights=<span class="st">'DEFAULT'</span>)
+mv3s = models.<span class="fn">mobilenet_v3_small</span>(weights=<span class="st">'DEFAULT'</span>)
+mv3l = models.<span class="fn">mobilenet_v3_large</span>(weights=<span class="st">'DEFAULT'</span>)
+
+<span class="cm"># Con Keras</span>
+<span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> MobileNetV2
+model = <span class="fn">MobileNetV2</span>(weights=<span class="st">'imagenet'</span>, input_shape=(<span class="st">224</span>,<span class="st">224</span>,<span class="st">3</span>))</pre>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Parámetros (MobileNetV1)</div><div class="detail-val">~4.2M</div></div>
+            <div class="detail-item"><div class="detail-label">MobileNetV2</div><div class="detail-val">~3.4M (con residuales)</div></div>
+            <div class="detail-item"><div class="detail-label">Multiplicadores</div><div class="detail-val">Width (α) y Resolution (ρ)</div></div>
+            <div class="detail-item"><div class="detail-label">Residuales</div><div class="detail-val">✓ En V2 (Inverted Residuals)</div></div>
+            <div class="detail-item"><div class="detail-label">Objetivo</div><div class="detail-val">Dispositivos móviles / Edge</div></div>
+            <div class="detail-item"><div class="detail-label">Reducción de MACs</div><div class="detail-val">~8-9× vs Conv estándar</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Depthwise Separable Conv</span>
+            <span class="tag">Pointwise Conv</span>
+            <span class="tag highlight">Inverted Residuals (V2)</span>
+            <span class="tag">Squeeze-and-Excite (V3)</span>
+            <span class="tag">Width Multiplier</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué la hizo revolucionaria?</strong><br>
+            Redefinió el trade-off precisión/eficiencia para dispositivos con recursos limitados. La <em>depthwise separable convolution</em> aplica primero un filtro por canal (depthwise), luego combina canales con Conv 1×1 (pointwise), logrando el mismo efecto con 8-9× menos operaciones. MobileNetV2 añadió <em>inverted residuals</em> con bottlenecks lineales.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EfficientNet -->
+  <div class="panel" id="panel-efficientnet">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2019</div>
+          <div class="arch-name">EfficientNet</div>
+          <div class="arch-author">Mingxing Tan, Quoc V. Le — Google Brain</div>
+          <div class="arch-venue">ICML 2019 — "EfficientNet: Rethinking Model Scaling for CNNs"</div>
+        </div>
+        <span class="badge badge-gold">Compound Scaling</span>
+      </div>
+      <div class="diagram-section">
+        <h3>// Compound Scaling</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="520" height="170" viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Baseline -->
+            <text x="260" y="16" text-anchor="middle" fill="#505070" font-size="8">Compound Scaling: escalar profundidad, anchura y resolución simultáneamente</text>
+            <!-- 4 boxes -->
+            <rect x="15" y="30" width="100" height="110" rx="3" fill="#12121a" stroke="#252535" stroke-width="1"/>
+            <text x="65" y="50" text-anchor="middle" fill="#7070a0" font-size="8">Baseline (B0)</text>
+            <rect x="25" y="58" width="80" height="24" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
+            <rect x="25" y="86" width="80" height="24" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.4"/>
+            <rect x="25" y="114" width="80" height="18" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.3"/>
+            <text x="65" y="148" text-anchor="middle" fill="#6ee7f7" font-size="8">224px · B0</text>
+            <!-- Width -->
+            <rect x="130" y="30" width="100" height="110" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+            <text x="180" y="50" text-anchor="middle" fill="#b06ef7" font-size="8">+ Anchura</text>
+            <rect x="136" y="58" width="88" height="24" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.7"/>
+            <rect x="136" y="86" width="88" height="24" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.55"/>
+            <rect x="136" y="114" width="88" height="18" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.4"/>
+            <text x="180" y="148" text-anchor="middle" fill="#b06ef7" font-size="8">más canales</text>
+            <!-- Depth -->
+            <rect x="245" y="18" width="100" height="122" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
+            <text x="295" y="38" text-anchor="middle" fill="#f7c86e" font-size="8">+ Profundidad</text>
+            <rect x="253" y="46" width="84" height="18" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.7"/>
+            <rect x="253" y="68" width="84" height="18" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.65"/>
+            <rect x="253" y="90" width="84" height="18" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.6"/>
+            <rect x="253" y="112" width="84" height="18" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.55"/>
+            <text x="295" y="148" text-anchor="middle" fill="#f7c86e" font-size="8">más capas</text>
+            <!-- Compound -->
+            <rect x="360" y="8" width="148" height="134" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="2"/>
+            <text x="434" y="26" text-anchor="middle" fill="#6ee7f7" font-size="8.5" font-weight="bold">Compound (B7)</text>
+            <rect x="368" y="34" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
+            <rect x="368" y="54" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.75"/>
+            <rect x="368" y="74" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.7"/>
+            <rect x="368" y="94" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.65"/>
+            <rect x="368" y="114" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <text x="434" y="158" text-anchor="middle" fill="#6ee7f7" font-size="8">600px · B7</text>
+            <!-- Arrow -->
+            <text x="260" y="165" text-anchor="middle" fill="#505070" font-size="7">φ = coeficiente de escala · d = α^φ · w = β^φ · r = γ^φ  (α·β²·γ² ≈ 2)</text>
+          </svg>
+        </div>
+      </div>
+      <div class="code-section">
+        <h3>// Python · Importar modelo</h3>
+        <pre><span class="cm"># EfficientNet B0–B7 con torchvision</span>
+<span class="kw">import</span> torchvision.models <span class="kw">as</span> models
+
+b0 = models.<span class="fn">efficientnet_b0</span>(weights=<span class="st">'DEFAULT'</span>)
+b4 = models.<span class="fn">efficientnet_b4</span>(weights=<span class="st">'DEFAULT'</span>)
+b7 = models.<span class="fn">efficientnet_b7</span>(weights=<span class="st">'DEFAULT'</span>)
+
+<span class="cm"># Con Keras / TensorFlow</span>
+<span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> EfficientNetB0
+model = <span class="fn">EfficientNetB0</span>(weights=<span class="st">'imagenet'</span>)
+
+<span class="cm"># EfficientNetV2 (más nuevo, más rápido)</span>
+<span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> EfficientNetV2S
+model_v2 = <span class="fn">EfficientNetV2S</span>(weights=<span class="st">'imagenet'</span>)</pre>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Parámetros (B0)</div><div class="detail-val">~5.3M</div></div>
+            <div class="detail-item"><div class="detail-label">Parámetros (B7)</div><div class="detail-val">~66M</div></div>
+            <div class="detail-item"><div class="detail-label">Bloques base</div><div class="detail-val">MBConv (MobileNetV2 inv. residual)</div></div>
+            <div class="detail-item"><div class="detail-label">Residuales</div><div class="detail-val">✓ (heredados de MBConv)</div></div>
+            <div class="detail-item"><div class="detail-label">Squeeze-Excitation</div><div class="detail-val">✓ Sí</div></div>
+            <div class="detail-item"><div class="detail-label">Top-1 (B7)</div><div class="detail-val">84.3% ImageNet</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Compound Scaling</span>
+            <span class="tag">MBConv</span>
+            <span class="tag highlight">Squeeze-and-Excitation</span>
+            <span class="tag">Depthwise Sep. Conv</span>
+            <span class="tag">NAS (Neural Arch. Search)</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué la hizo revolucionaria?</strong><br>
+            Introdujo el <em>compound scaling</em>: en lugar de escalar sólo la profundidad, anchura o resolución de forma independiente, encontró (mediante NAS) los coeficientes óptimos para escalarlas simultáneamente. Resultó en modelos que superan a ResNets y SENet con muchos menos parámetros. EfficientNet-B7 igualó el estado del arte con 8.4× menos parámetros que el mejor modelo anterior.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ViT -->
+  <div class="panel" id="panel-vit">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2020</div>
+          <div class="arch-name">Vision Transformer (ViT)</div>
+          <div class="arch-author">Alexey Dosovitskiy et al. — Google Brain</div>
+          <div class="arch-venue">ICLR 2021 — "An Image is Worth 16×16 Words"</div>
+        </div>
+        <span class="badge badge-purple">Transformer</span>
+      </div>
+      <div class="diagram-section">
+        <h3>// Arquitectura ViT</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="580" height="175" viewBox="0 0 580 175" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Image -->
+            <rect x="5" y="65" width="56" height="56" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.7"/>
+            <!-- Patch grid lines -->
+            <line x1="5" y1="79" x2="61" y2="79" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="5" y1="93" x2="61" y2="93" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="5" y1="107" x2="61" y2="107" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="19" y1="65" x2="19" y2="121" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="33" y1="65" x2="33" y2="121" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="47" y1="65" x2="47" y2="121" stroke="#0a0a0f" stroke-width="1"/>
+            <text x="33" y="142" text-anchor="middle" fill="#6ee7f7" font-size="7.5">Imagen</text>
+            <text x="33" y="151" text-anchor="middle" fill="#505070" font-size="7">224×224</text>
+            <!-- Arrow patch split -->
+            <line x1="61" y1="93" x2="75" y2="93" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="75,89 81,93 75,97" fill="#252535"/>
+            <!-- Patches -->
+            <text x="108" y="55" text-anchor="middle" fill="#505070" font-size="7">Patches linealizados</text>
+            <rect x="81" y="60" width="18" height="18" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.9"/>
+            <rect x="81" y="80" width="18" height="18" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.75"/>
+            <rect x="81" y="100" width="18" height="18" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <rect x="81" y="120" width="18" height="18" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.4"/>
+            <text x="99" y="113" text-anchor="left" fill="#505070" font-size="8">...</text>
+            <text x="90" y="152" text-anchor="middle" fill="#6ee7f7" font-size="7.5">N patches</text>
+            <text x="90" y="161" text-anchor="middle" fill="#505070" font-size="7">16×16 px</text>
+            <!-- Linear projection -->
+            <line x1="108" y1="93" x2="122" y2="93" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="122,89 128,93 122,97" fill="#252535"/>
+            <rect x="128" y="70" width="50" height="46" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="153" y="92" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Linear</text>
+            <text x="153" y="103" text-anchor="middle" fill="#0a0a0f" font-size="7.5">Projection</text>
+            <text x="153" y="152" text-anchor="middle" fill="#b06ef7" font-size="7">+ Pos. Emb.</text>
+            <!-- CLS token -->
+            <rect x="128" y="44" width="50" height="22" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="153" y="59" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">[CLS] token</text>
+            <!-- Arrow to transformer -->
+            <line x1="178" y1="93" x2="194" y2="93" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="194,89 200,93 194,97" fill="#252535"/>
+            <!-- Transformer Encoder -->
+            <rect x="200" y="26" width="140" height="134" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+            <text x="270" y="44" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">Transformer Encoder ×L</text>
+            <!-- Sub-blocks inside -->
+            <rect x="210" y="50" width="120" height="24" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="270" y="66" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Multi-Head Self-Attention</text>
+            <rect x="210" y="80" width="120" height="18" rx="2" fill="#1a1a26" stroke="#252535" stroke-width="1"/>
+            <text x="270" y="93" text-anchor="middle" fill="#7070a0" font-size="7.5">Add &amp; Norm</text>
+            <rect x="210" y="104" width="120" height="24" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
+            <text x="270" y="120" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">MLP (Feed-Forward)</text>
+            <rect x="210" y="134" width="120" height="18" rx="2" fill="#1a1a26" stroke="#252535" stroke-width="1"/>
+            <text x="270" y="147" text-anchor="middle" fill="#7070a0" font-size="7.5">Add &amp; Norm</text>
+            <!-- Arrow out -->
+            <line x1="340" y1="93" x2="356" y2="93" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="356,89 362,93 356,97" fill="#252535"/>
+            <!-- MLP Head -->
+            <rect x="362" y="70" width="80" height="46" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="402" y="90" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">MLP Head</text>
+            <text x="402" y="103" text-anchor="middle" fill="#0a0a0f" font-size="7">[CLS] → class</text>
+            <!-- Output -->
+            <line x1="442" y1="93" x2="458" y2="93" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="458,89 464,93 458,97" fill="#252535"/>
+            <rect x="464" y="75" width="90" height="36" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="509" y="96" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Clase predicha</text>
+            <text x="270" y="172" text-anchor="middle" fill="#505070" font-size="7">Sin convoluciones — pura atención sobre secuencias de patches de imagen</text>
+          </svg>
+        </div>
+      </div>
+      <div class="code-section">
+        <h3>// Python · Importar modelo</h3>
+        <pre><span class="cm"># Vision Transformer con torchvision (PyTorch ≥1.13)</span>
+<span class="kw">import</span> torchvision.models <span class="kw">as</span> models
+
+vit_b16 = models.<span class="fn">vit_b_16</span>(weights=<span class="st">'DEFAULT'</span>)  <span class="cm"># Base, 16px patches</span>
+vit_b32 = models.<span class="fn">vit_b_32</span>(weights=<span class="st">'DEFAULT'</span>)  <span class="cm"># Base, 32px patches</span>
+vit_l16 = models.<span class="fn">vit_l_16</span>(weights=<span class="st">'DEFAULT'</span>)  <span class="cm"># Large</span>
+
+<span class="cm"># Con HuggingFace Transformers (recomendado)</span>
+<span class="kw">from</span> transformers <span class="kw">import</span> ViTForImageClassification
+model = ViTForImageClassification.<span class="fn">from_pretrained</span>(
+    <span class="st">'google/vit-base-patch16-224'</span>
+)
+
+<span class="cm"># Con Keras / TF</span>
+<span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> EfficientNetV2L <span class="cm"># o usar keras-cv</span></pre>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Parámetros (ViT-B/16)</div><div class="detail-val">~86M</div></div>
+            <div class="detail-item"><div class="detail-label">Parámetros (ViT-L/16)</div><div class="detail-val">~307M</div></div>
+            <div class="detail-item"><div class="detail-label">Capas Transformer</div><div class="detail-val">12 (Base) · 24 (Large)</div></div>
+            <div class="detail-item"><div class="detail-label">Residuales</div><div class="detail-val">✓ Add & Norm en cada bloque</div></div>
+            <div class="detail-item"><div class="detail-label">Atención</div><div class="detail-val">Multi-Head Self-Attention</div></div>
+            <div class="detail-item"><div class="detail-label">Pre-training</div><div class="detail-val">JFT-300M (Google)</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Self-Attention</span>
+            <span class="tag highlight">Patch Embedding</span>
+            <span class="tag">CLS Token</span>
+            <span class="tag">Positional Encoding</span>
+            <span class="tag highlight">Sin Convoluciones</span>
+            <span class="tag">Layer Norm</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué la hizo revolucionaria?</strong><br>
+            Demostró que la arquitectura Transformer (diseñada para NLP) puede aplicarse directamente a imágenes <em>sin ninguna convolución</em>. La imagen se divide en parches de 16×16 px que se tratan como tokens de una secuencia. Con suficiente preentrenamiento, supera a las mejores CNNs. Abrió la puerta a los modelos multimodales modernos (CLIP, Flamingo, GPT-4V).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /panels -->
+
+<script>
+  // Tab switching
+  document.getElementById('tabs').addEventListener('click', function(e) {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+    // Scroll tab into view
+    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  });
+
+  // Accordion
+  function toggleDetails(btn) {
+    const body = btn.nextElementSibling;
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    btn.classList.toggle('open', !isOpen);
+    btn.querySelector('.toggle-label').textContent = (isOpen ? '▸' : '▾') + ' Detalles de la arquitectura';
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      const btns = Array.from(document.querySelectorAll('.tab-btn'));
+      const activeIdx = btns.findIndex(b => b.classList.contains('active'));
+      const next = e.key === 'ArrowRight'
+        ? btns[Math.min(activeIdx + 1, btns.length - 1)]
+        : btns[Math.max(activeIdx - 1, 0)];
+      next.click();
+    }
+  });
+</script>
+</body>
+</html>
