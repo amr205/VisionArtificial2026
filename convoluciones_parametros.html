@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parámetros de Convolución — CNN Interactivo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #252535;
+    --accent: #6ee7f7;
+    --accent2: #f7c86e;
+    --accent3: #b06ef7;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    padding: 2.5rem 2rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(110,231,247,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: 5%;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(176,110,247,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--accent); }
+  .header-sub {
+    margin-top: 0.75rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-family: var(--mono);
+  }
+  .header-meta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.3em 0.8em;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .badge-cyan   { background: rgba(110,231,247,0.12); color: var(--accent);  border: 1px solid rgba(110,231,247,0.25); }
+  .badge-gold   { background: rgba(247,200,110,0.12); color: var(--accent2); border: 1px solid rgba(247,200,110,0.25); }
+  .badge-purple { background: rgba(176,110,247,0.12); color: var(--accent3); border: 1px solid rgba(176,110,247,0.25); }
+
+  /* APP SHELL */
+  .app-shell {
+    display: flex;
+    min-height: calc(100vh - 160px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 200px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 2rem 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .sidebar-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0 1.25rem 1rem;
+    opacity: 0.6;
+  }
+  .sidebar-timeline {
+    position: relative;
+    padding-left: 1.25rem;
+  }
+  .sidebar-timeline::before {
+    content: '';
+    position: absolute;
+    left: 2rem;
+    top: 0.55rem;
+    bottom: 0.55rem;
+    width: 1px;
+    background: var(--border);
+  }
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .tab-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    transition: all 0.25s;
+    position: relative;
+    z-index: 1;
+    margin-left: 0.75rem;
+  }
+  .tab-btn:hover .tab-dot { background: var(--muted); border-color: var(--muted); }
+  .tab-btn.active .tab-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(110,231,247,0.5); }
+  .tab-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+  .tab-icon {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+  .tab-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--muted);
+    transition: color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tab-btn:hover .tab-name,
+  .tab-btn:hover .tab-icon { color: var(--text); }
+  .tab-btn.active .tab-name { color: var(--accent); }
+  .tab-btn.active .tab-icon { color: var(--accent); opacity: 0.7; }
+  .tab-btn::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: rgba(110,231,247,0.07);
+    transition: width 0.2s;
+    border-radius: 0 3px 3px 0;
+  }
+  .tab-btn.active::before { width: 100%; }
+
+  /* CONTENT AREA */
+  .content-area {
+    flex: 1;
+    min-width: 0;
+    padding: 2rem;
+  }
+
+  /* PANELS */
+  .panel { display: none; animation: fadeUp 0.35s ease; }
+  .panel.active {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .card-body-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .card-body-grid .diagram-section {
+      border-right: 1px solid var(--border);
+    }
+    .card-body-grid .code-section {
+      border-top: none;
+    }
+  }
+  @media (min-width: 1400px) {
+    .card-body-grid { grid-template-columns: 3fr 2fr; }
+  }
+
+  /* HORIZONTAL TIMELINE (mobile) */
+  .timeline-wrap { display: none; }
+  .scroll-hint   { display: none; }
+
+  @media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { display: none; }
+    .timeline-wrap {
+      display: block;
+      position: relative;
+      padding: 2rem 1.5rem 0;
+    }
+    .timeline-bar {
+      position: absolute;
+      top: 2.85rem;
+      left: 1.5rem; right: 1.5rem;
+      height: 1px;
+      background: var(--border);
+    }
+    .tabs-scroll {
+      overflow-x: auto;
+      scrollbar-width: none;
+      position: relative;
+      z-index: 1;
+    }
+    .tabs-scroll::-webkit-scrollbar { display: none; }
+    .tabs { display: flex; gap: 0; min-width: max-content; }
+    .tab-btn {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0 1.25rem 1.25rem;
+      width: auto;
+    }
+    .tab-dot { margin-left: 0; }
+    .tab-text { align-items: center; }
+    .tab-name { white-space: nowrap; font-size: 0.75rem; }
+    .tab-btn::before { display: none; }
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 0; height: 2px;
+      background: var(--accent);
+      transition: width 0.25s;
+    }
+    .tab-btn.active::after { width: 100%; }
+    .scroll-hint {
+      display: block;
+      text-align: center;
+      padding: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--muted);
+    }
+    .content-area { padding: 1.25rem 1rem; }
+    .panel.active { flex-direction: column; }
+    .card-body-grid { display: flex !important; flex-direction: column; }
+    .card-body-grid .diagram-section { border-right: none; }
+    .card-body-grid .code-section { border-top: 1px solid var(--border); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .arch-year {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.3rem;
+  }
+  .arch-name {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .arch-sub {
+    margin-top: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  /* INTERACTIVE SECTION */
+  .diagram-section { padding: 1.5rem; }
+  .diagram-section h3 {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  /* FORMULA BAR */
+  .formula-bar {
+    background: #0d0d15;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .formula-text {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text);
+    flex: 1;
+    min-width: 180px;
+  }
+  .formula-text .hl { color: var(--accent); font-weight: 700; }
+  .formula-text .dim { color: var(--muted); }
+  .result-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; flex-shrink: 0; }
+  .res-badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    padding: 0.3em 0.75em;
+    border-radius: 2px;
+    background: rgba(110,231,247,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(110,231,247,0.25);
+  }
+  .res-badge.warn { background: rgba(247,200,110,0.1); color: var(--accent2); border-color: rgba(247,200,110,0.25); }
+  .res-badge.err  { background: rgba(247,110,110,0.1); color: #f76e6e; border-color: rgba(247,110,110,0.25); }
+
+  /* CONTROLS GRID */
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .ctrl-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.85rem 1rem;
+  }
+  .ctrl-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+  }
+  .ctrl-label { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .ctrl-val   { font-family: var(--mono); font-size: 1rem; font-weight: 700; color: var(--accent); }
+  .ctrl-hint  { font-family: var(--mono); font-size: 0.58rem; color: var(--muted); margin-top: 0.35rem; opacity: 0.7; }
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* VISUALIZATION */
+  .vis-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+  @media (max-width: 620px) { .vis-row { grid-template-columns: 1fr; } }
+  .vis-card {
+    background: #0d0d15;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.75rem;
+  }
+  .vis-card h4 {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  .vis-card canvas { display: block; margin: 0 auto; }
+
+  /* STEP ROW */
+  .step-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+  }
+  .step-btn {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    padding: 0.2em 0.6em;
+    border-radius: 2px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .step-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .step-btn.active { background: rgba(110,231,247,0.12); border-color: var(--accent); color: var(--accent); }
+  .step-more { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); padding: 0.2em 0.4em; }
+
+  /* CODE */
+  .code-section { padding: 1.5rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; }
+  .code-section h3 {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  pre {
+    background: #0d0d15;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    line-height: 1.7;
+    color: #c8c8e8;
+    flex: 1;
+  }
+  .kw { color: #f7c86e; }
+  .fn { color: #6ee7f7; }
+  .st { color: #b06ef7; }
+  .cm { color: #505070; font-style: italic; }
+  .nb { color: #f7a06e; }
+  #code-live { min-height: 220px; }
+
+  /* DETAILS ACCORDION */
+  .details-section { border-top: 1px solid var(--border); }
+  .details-toggle {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .details-toggle:hover { background: var(--surface2); }
+  .details-toggle .toggle-label { display: flex; align-items: center; gap: 0.5rem; }
+  .details-toggle .arrow { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); transition: transform 0.25s; }
+  .details-toggle.open .arrow { transform: rotate(90deg); }
+  .details-body { display: none; padding: 0 1.5rem 1.5rem; animation: fadeUp 0.25s ease; }
+  .details-body.open { display: block; }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .detail-label { font-family: var(--mono); font-size: 0.6rem; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.35rem; }
+  .detail-val { font-size: 0.82rem; color: var(--text); line-height: 1.5; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+  .tag { font-family: var(--mono); font-size: 0.62rem; padding: 0.25em 0.6em; border-radius: 2px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+  .tag.highlight { color: var(--accent3); border-color: rgba(176,110,247,0.3); background: rgba(176,110,247,0.08); }
+  .novelty-box {
+    background: rgba(110,231,247,0.05);
+    border: 1px solid rgba(110,231,247,0.15);
+    border-radius: 3px;
+    padding: 0.9rem 1rem;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--text);
+    margin-top: 0.75rem;
+  }
+  .novelty-box strong { color: var(--accent); }
+  .details-section { margin-top: auto; }
+
+  /* INVALID MSG */
+  .invalid-msg { font-family: var(--mono); font-size: 0.72rem; color: #f76e6e; padding: 0.5rem 0; }
+
+  /* DIAGRAM SVG */
+  .diagram-svg-wrap {
+    background: #0d0d15;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    cursor: zoom-in;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .diagram-svg-wrap:hover { border-color: rgba(110,231,247,0.4); }
+  .diagram-svg-wrap::after {
+    content: '⤢  ampliar';
+    position: absolute;
+    top: 0.5rem; right: 0.75rem;
+    font-size: 0.6rem;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+  }
+  .diagram-svg-wrap:hover::after { opacity: 0.7; }
+  .diagram-svg-wrap svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+  /* LIGHTBOX */
+  #lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(5,5,10,0.93);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+  }
+  #lightbox.open { display: flex; animation: lbFadeIn 0.18s ease; }
+  @keyframes lbFadeIn { from { opacity:0 } to { opacity:1 } }
+  #lightbox-inner {
+    position: relative;
+    width: 92vw; max-width: 1600px; height: 88vh;
+    background: #0d0d15;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: lbUp 0.2s ease;
+  }
+  @keyframes lbUp { from { opacity:0; transform: translateY(14px) scale(0.985); } to { opacity:1; transform: translateY(0) scale(1); } }
+  #lightbox-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0; gap: 1rem;
+  }
+  #lightbox-title { font-family: var(--mono); font-size: 0.65rem; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; }
+  #lightbox-controls { display: flex; gap: 0.5rem; align-items: center; }
+  .lb-btn {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 0.72rem; padding: 0.35em 0.8em;
+    border-radius: 3px; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s;
+    line-height: 1.4; white-space: nowrap;
+  }
+  .lb-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(110,231,247,0.06); }
+  .lb-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+  .lb-btn.danger:hover { border-color: #f76e6e; color: #f76e6e; background: rgba(247,110,110,0.06); }
+  #lightbox-counter { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); padding: 0 0.25rem; }
+  #lightbox-viewport {
+    flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center;
+    padding: 2rem; position: relative;
+  }
+  #lightbox-viewport svg { display: block; transition: transform 0.2s ease; transform-origin: center center; }
+  #lightbox-hint {
+    position: absolute; bottom: 0.75rem; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: 0.6rem; color: var(--muted); opacity: 0.4;
+    letter-spacing: 0.08em; pointer-events: none; white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Diagrama ampliado">
+  <div id="lightbox-inner">
+    <div id="lightbox-topbar">
+      <span id="lightbox-title">// Diagrama</span>
+      <div id="lightbox-controls">
+        <button class="lb-btn" id="lb-prev">← anterior</button>
+        <span id="lightbox-counter"></span>
+        <button class="lb-btn" id="lb-next">siguiente →</button>
+        <span style="width:1px;background:var(--border);align-self:stretch;margin:0 0.25rem"></span>
+        <button class="lb-btn" id="lb-zoom-out">－</button>
+        <button class="lb-btn" id="lb-zoom-reset">100%</button>
+        <button class="lb-btn" id="lb-zoom-in">＋</button>
+        <span style="width:1px;background:var(--border);align-self:stretch;margin:0 0.25rem"></span>
+        <button class="lb-btn danger" id="lb-close">✕ cerrar</button>
+      </div>
+    </div>
+    <div id="lightbox-viewport">
+      <span id="lightbox-hint">scroll para mover · rueda para zoom · Esc para cerrar</span>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <div class="header-label">// Material de clase · 2024</div>
+    <h1>Parámetros de <span>Convolución</span><br>en Redes Neuronales</h1>
+    <p class="header-sub">Explorer interactivo · PyTorch · Visualización</p>
+  </div>
+  <div class="header-meta">
+    <span class="badge badge-cyan">5 Parámetros</span>
+    <span class="badge badge-gold">Interactivo</span>
+    <span class="badge badge-purple">PyTorch</span>
+  </div>
+</header>
+
+<!-- MOBILE horizontal timeline -->
+<div class="timeline-wrap">
+  <div class="timeline-bar"></div>
+  <div class="tabs-scroll">
+    <div class="tabs" id="tabs-mobile">
+      <button class="tab-btn active" data-tab="explorer"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⚡</div><div class="tab-name">Explorer</div></div></button>
+      <button class="tab-btn" data-tab="kernel"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">◻</div><div class="tab-name">Kernel</div></div></button>
+      <button class="tab-btn" data-tab="padding"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⬜</div><div class="tab-name">Padding</div></div></button>
+      <button class="tab-btn" data-tab="stride"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">→</div><div class="tab-name">Stride</div></div></button>
+      <button class="tab-btn" data-tab="dilation"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⟺</div><div class="tab-name">Dilatación</div></div></button>
+    </div>
+  </div>
+  <div class="scroll-hint">← scroll →</div>
+</div>
+
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-label">// Parámetros</div>
+    <div class="sidebar-timeline">
+      <div class="tabs" id="tabs-sidebar">
+        <button class="tab-btn active" data-tab="explorer"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⚡ Explorer</div><div class="tab-name">Interactivo</div></div></button>
+        <button class="tab-btn" data-tab="kernel"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">◻ kernel_size</div><div class="tab-name">Tamaño filtro</div></div></button>
+        <button class="tab-btn" data-tab="padding"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⬜ padding</div><div class="tab-name">Relleno</div></div></button>
+        <button class="tab-btn" data-tab="stride"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">→ stride</div><div class="tab-name">Paso</div></div></button>
+        <button class="tab-btn" data-tab="dilation"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⟺ dilation</div><div class="tab-name">Dilatación</div></div></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="content-area">
+  <div style="padding: 0 0 4rem;">
+
+    <!-- ══════════════════════════════════════ EXPLORER ══ -->
+    <div class="panel active" id="panel-explorer">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="arch-year">// Explorer interactivo</div>
+            <div class="arch-name">Parámetros de Conv2d</div>
+            <div class="arch-sub">Ajusta los sliders y observa cómo cambia la salida en tiempo real</div>
+          </div>
+          <span class="badge badge-cyan">Live</span>
+        </div>
+
+        <!-- INTERACTIVE SECTION -->
+        <div class="diagram-section">
+          <h3>// Controles</h3>
+
+          <div class="formula-bar">
+            <div class="formula-text" id="formula-txt">
+              <span class="dim">out_size =</span> <span class="hl">—</span>
+            </div>
+            <div class="result-badges" id="badge-area"></div>
+          </div>
+
+          <div class="controls-grid">
+            <div class="ctrl-card">
+              <div class="ctrl-top">
+                <span class="ctrl-label">Input size (H = W)</span>
+                <span class="ctrl-val" id="val-H">7</span>
+              </div>
+              <input type="range" id="sl-H" min="4" max="28" step="1" value="7">
+              <div class="ctrl-hint">Dimensión espacial de la entrada</div>
+            </div>
+            <div class="ctrl-card">
+              <div class="ctrl-top">
+                <span class="ctrl-label">kernel_size (k)</span>
+                <span class="ctrl-val" id="val-k">3</span>
+              </div>
+              <input type="range" id="sl-k" min="1" max="7" step="2" value="3">
+              <div class="ctrl-hint">Ancho × alto del filtro (solo impares)</div>
+            </div>
+            <div class="ctrl-card">
+              <div class="ctrl-top">
+                <span class="ctrl-label">padding (p)</span>
+                <span class="ctrl-val" id="val-p">0</span>
+              </div>
+              <input type="range" id="sl-p" min="0" max="6" step="1" value="0">
+              <div class="ctrl-hint">Ceros añadidos alrededor de la entrada</div>
+            </div>
+            <div class="ctrl-card">
+              <div class="ctrl-top">
+                <span class="ctrl-label">stride (s)</span>
+                <span class="ctrl-val" id="val-s">1</span>
+              </div>
+              <input type="range" id="sl-s" min="1" max="4" step="1" value="1">
+              <div class="ctrl-hint">Paso del kernel por la imagen</div>
+            </div>
+            <div class="ctrl-card">
+              <div class="ctrl-top">
+                <span class="ctrl-label">dilation (d)</span>
+                <span class="ctrl-val" id="val-d">1</span>
+              </div>
+              <input type="range" id="sl-d" min="1" max="4" step="1" value="1">
+              <div class="ctrl-hint">Espacio entre elementos del kernel</div>
+            </div>
+          </div>
+
+          <div id="invalid-msg" class="invalid-msg" style="display:none"></div>
+
+          <div class="vis-row">
+            <div class="vis-card">
+              <h4>// Entrada (con padding)</h4>
+              <canvas id="cv-in" width="160" height="160"></canvas>
+            </div>
+            <div class="vis-card">
+              <h4>// Posiciones del kernel</h4>
+              <canvas id="cv-pos" width="160" height="160"></canvas>
+            </div>
+            <div class="vis-card">
+              <h4>// Mapa de salida</h4>
+              <canvas id="cv-out" width="160" height="160"></canvas>
+            </div>
+          </div>
+
+          <div class="step-row" id="step-row"></div>
+        </div>
+
+        <div class="code-section">
+          <h3>// Python · PyTorch (actualizado en vivo)</h3>
+          <pre id="code-live"></pre>
+        </div>
+
+        <div class="details-section">
+          <button class="details-toggle" onclick="toggleDetails(this)">
+            <span class="toggle-label">▸ Fórmula completa y referencia</span>
+            <span class="arrow">›</span>
+          </button>
+          <div class="details-body">
+            <div class="detail-grid">
+              <div><div class="detail-label">Fórmula general</div><div class="detail-val">⌊(H + 2p − d(k−1) − 1) / s⌋ + 1</div></div>
+              <div><div class="detail-label">Kernel efectivo</div><div class="detail-val">k_eff = d × (k − 1) + 1</div></div>
+              <div><div class="detail-label">Padding "same" (s=1, d=1)</div><div class="detail-val">p = (k − 1) / 2 → salida = entrada</div></div>
+              <div><div class="detail-label">Clase PyTorch</div><div class="detail-val">torch.nn.Conv2d</div></div>
+            </div>
+            <div class="tag-list">
+              <span class="tag highlight">kernel_size</span>
+              <span class="tag highlight">padding</span>
+              <span class="tag highlight">stride</span>
+              <span class="tag highlight">dilation</span>
+              <span class="tag">in_channels</span>
+              <span class="tag">out_channels</span>
+              <span class="tag">groups</span>
+              <span class="tag">bias</span>
+            </div>
+            <div class="novelty-box">
+              <strong>¿Por qué importa el tamaño de salida?</strong><br>
+              En una red profunda, cada capa convolucional transforma la dimensión espacial del tensor. Calcular el tamaño correcto evita errores de dimensión al conectar capas (especialmente antes de capas <em>Flatten</em> o <em>Linear</em>). La fórmula general unifica todos los parámetros: un stride mayor reduce el tamaño, el padding lo conserva, y la dilatación expande el campo receptivo sin aumentar parámetros.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /panel-explorer -->
+
+    <!-- ══════════════════════════════════════ KERNEL ══ -->
+    <div class="panel" id="panel-kernel">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="arch-year">// Parámetro 1</div>
+            <div class="arch-name">kernel_size</div>
+            <div class="arch-sub">Tamaño del filtro convolucional</div>
+          </div>
+          <span class="badge badge-cyan">Básico</span>
+        </div>
+        <div class="card-body-grid">
+          <div class="diagram-section">
+            <h3>// Comparación de tamaños de kernel</h3>
+            <div class="diagram-svg-wrap">
+              <svg width="540" height="240" viewBox="0 0 540 240" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+                <defs>
+                  <linearGradient id="gC" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#6ee7f7;stop-opacity:0.7"/>
+                    <stop offset="100%" style="stop-color:#6ee7f7;stop-opacity:0.3"/>
+                  </linearGradient>
+                  <linearGradient id="gG" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#f7c86e;stop-opacity:0.7"/>
+                    <stop offset="100%" style="stop-color:#f7c86e;stop-opacity:0.3"/>
+                  </linearGradient>
+                  <linearGradient id="gP" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#b06ef7;stop-opacity:0.7"/>
+                    <stop offset="100%" style="stop-color:#b06ef7;stop-opacity:0.3"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- 1x1 kernel -->
+                <text x="60" y="18" text-anchor="middle" fill="#6ee7f7" font-size="9" font-weight="bold">k = 1×1</text>
+                <!-- 5x5 input grid -->
+                <g opacity="0.4">
+                  <rect x="10" y="26" width="100" height="100" rx="2" fill="none" stroke="#252535" stroke-width="0.5"/>
+                  <!-- grid lines -->
+                  <line x1="30" y1="26" x2="30" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="50" y1="26" x2="50" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="70" y1="26" x2="70" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="90" y1="26" x2="90" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="10" y1="46" x2="110" y2="46" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="10" y1="66" x2="110" y2="66" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="10" y1="86" x2="110" y2="86" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="10" y1="106" x2="110" y2="106" stroke="#252535" stroke-width="0.5"/>
+                </g>
+                <rect x="30" y="46" width="20" height="20" rx="1" fill="url(#gC)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <text x="60" y="148" text-anchor="middle" fill="#505070" font-size="8">campo receptivo: 1px</text>
+                <text x="60" y="160" text-anchor="middle" fill="#505070" font-size="8">parámetros: 1</text>
+                <text x="60" y="172" text-anchor="middle" fill="#6ee7f7" font-size="8">5×5 entrada → 5×5 salida</text>
+
+                <!-- 3x3 kernel -->
+                <text x="200" y="18" text-anchor="middle" fill="#f7c86e" font-size="9" font-weight="bold">k = 3×3</text>
+                <g opacity="0.4">
+                  <rect x="150" y="26" width="100" height="100" rx="2" fill="none" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="170" y1="26" x2="170" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="190" y1="26" x2="190" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="210" y1="26" x2="210" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="230" y1="26" x2="230" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="150" y1="46" x2="250" y2="46" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="150" y1="66" x2="250" y2="66" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="150" y1="86" x2="250" y2="86" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="150" y1="106" x2="250" y2="106" stroke="#252535" stroke-width="0.5"/>
+                </g>
+                <rect x="170" y="46" width="60" height="60" rx="1" fill="url(#gG)" stroke="#f7c86e" stroke-width="1.5"/>
+                <text x="200" y="148" text-anchor="middle" fill="#505070" font-size="8">campo receptivo: 3×3 px</text>
+                <text x="200" y="160" text-anchor="middle" fill="#505070" font-size="8">parámetros: 9</text>
+                <text x="200" y="172" text-anchor="middle" fill="#f7c86e" font-size="8">5×5 entrada → 3×3 salida</text>
+
+                <!-- 5x5 kernel -->
+                <text x="340" y="18" text-anchor="middle" fill="#b06ef7" font-size="9" font-weight="bold">k = 5×5</text>
+                <g opacity="0.4">
+                  <rect x="290" y="26" width="100" height="100" rx="2" fill="none" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="310" y1="26" x2="310" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="330" y1="26" x2="330" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="350" y1="26" x2="350" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="370" y1="26" x2="370" y2="126" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="290" y1="46" x2="390" y2="46" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="290" y1="66" x2="390" y2="66" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="290" y1="86" x2="390" y2="86" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="290" y1="106" x2="390" y2="106" stroke="#252535" stroke-width="0.5"/>
+                </g>
+                <rect x="290" y="26" width="100" height="100" rx="1" fill="url(#gP)" stroke="#b06ef7" stroke-width="1.5"/>
+                <text x="340" y="148" text-anchor="middle" fill="#505070" font-size="8">campo receptivo: 5×5 px</text>
+                <text x="340" y="160" text-anchor="middle" fill="#505070" font-size="8">parámetros: 25</text>
+                <text x="340" y="172" text-anchor="middle" fill="#b06ef7" font-size="8">5×5 entrada → 1×1 salida</text>
+
+                <!-- Nota VGG -->
+                <rect x="10" y="190" width="520" height="42" rx="2" fill="rgba(110,231,247,0.04)" stroke="rgba(110,231,247,0.15)" stroke-width="1"/>
+                <text x="270" y="207" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">Truco VGGNet: dos Conv 3×3 apiladas ≡ una Conv 5×5 con menos parámetros (18 vs 25)</text>
+                <text x="270" y="222" text-anchor="middle" fill="#505070" font-size="7.5">2 × (3×3 × C²) = 18C²  &lt;  5×5 × C² = 25C²  →  28% menos parámetros y más no-linealidades</text>
+              </svg>
+            </div>
+          </div>
+          <div class="code-section">
+            <h3>// Python · kernel_size</h3>
+            <pre><span class="cm"># kernel_size controla el campo receptivo</span>
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+<span class="cm"># Kernels comunes</span>
+conv1x1 = nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">64</span>, kernel_size=<span class="st">1</span>)
+<span class="cm"># → mezcla canales sin campo espacial</span>
+
+conv3x3 = nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">64</span>, kernel_size=<span class="st">3</span>)
+<span class="cm"># → el más usado en redes modernas</span>
+
+conv5x5 = nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">64</span>, kernel_size=<span class="st">5</span>)
+<span class="cm"># → más campo pero más parámetros</span>
+
+conv7x7 = nn.<span class="fn">Conv2d</span>(<span class="st">3</span>, <span class="st">64</span>, kernel_size=<span class="st">7</span>, stride=<span class="st">2</span>)
+<span class="cm"># → típico en la primera capa (ResNet, etc.)</span>
+
+<span class="cm"># Parámetros = k² × C_in × C_out (+ bias)</span>
+<span class="kw">import</span> torch
+x = torch.<span class="fn">randn</span>(<span class="st">1</span>, <span class="st">64</span>, <span class="st">28</span>, <span class="st">28</span>)
+y3 = conv3x3(x)  <span class="cm"># → (1, 64, 26, 26)</span>
+y5 = conv5x5(x)  <span class="cm"># → (1, 64, 24, 24)</span></pre>
+          </div>
+        </div>
+        <div class="details-section">
+          <button class="details-toggle" onclick="toggleDetails(this)">
+            <span class="toggle-label">▸ Detalles del parámetro</span>
+            <span class="arrow">›</span>
+          </button>
+          <div class="details-body">
+            <div class="detail-grid">
+              <div><div class="detail-label">Efecto en salida</div><div class="detail-val">Más grande → salida más pequeña</div></div>
+              <div><div class="detail-label">Efecto en parámetros</div><div class="detail-val">Crece con k² (cuadráticamente)</div></div>
+              <div><div class="detail-label">Valores típicos</div><div class="detail-val">1, 3, 5, 7 (siempre impares)</div></div>
+              <div><div class="detail-label">Campo receptivo</div><div class="detail-val">k × k píxeles de la entrada</div></div>
+            </div>
+            <div class="tag-list">
+              <span class="tag highlight">Campo receptivo</span>
+              <span class="tag">Parámetros</span>
+              <span class="tag">Reducción espacial</span>
+              <span class="tag">Invarianza traslación</span>
+            </div>
+            <div class="novelty-box">
+              <strong>Regla práctica:</strong><br>
+              En la mayoría de redes modernas (ResNet, EfficientNet, MobileNet) prácticamente todos los kernels son <em>3×3</em>. Los kernels 1×1 se usan para mezclar canales sin coste espacial (bottleneck). Los kernels grandes (7×7) solo aparecen en la primera capa para reducir rápidamente la resolución de la imagen de entrada.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /panel-kernel -->
+
+    <!-- ══════════════════════════════════════ PADDING ══ -->
+    <div class="panel" id="panel-padding">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="arch-year">// Parámetro 2</div>
+            <div class="arch-name">padding</div>
+            <div class="arch-sub">Relleno con ceros alrededor de la entrada</div>
+          </div>
+          <span class="badge badge-gold">Conserva tamaño</span>
+        </div>
+        <div class="card-body-grid">
+          <div class="diagram-section">
+            <h3>// padding = 0 vs padding = 1 (con k=3)</h3>
+            <div class="diagram-svg-wrap">
+              <svg width="520" height="220" viewBox="0 0 520 220" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+                <!-- SIN PADDING -->
+                <text x="120" y="16" text-anchor="middle" fill="#f76e6e" font-size="9" font-weight="bold">padding = 0  →  salida se reduce</text>
+                <!-- 5x5 input -->
+                <g>
+                  <rect x="10" y="24" width="100" height="100" rx="2" fill="rgba(110,231,247,0.06)" stroke="#252535" stroke-width="1"/>
+                  <line x1="30" y1="24" x2="30" y2="124" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="50" y1="24" x2="50" y2="124" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="70" y1="24" x2="70" y2="124" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="90" y1="24" x2="90" y2="124" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="10" y1="44" x2="110" y2="44" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="10" y1="64" x2="110" y2="64" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="10" y1="84" x2="110" y2="84" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="10" y1="104" x2="110" y2="104" stroke="#252535" stroke-width="0.5"/>
+                  <text x="60" y="138" text-anchor="middle" fill="#505070" font-size="8">5×5 entrada</text>
+                </g>
+                <!-- kernel highlight top-left -->
+                <rect x="10" y="24" width="60" height="60" rx="1" fill="rgba(247,200,110,0.25)" stroke="#f7c86e" stroke-width="1.5"/>
+                <!-- arrow + output -->
+                <line x1="116" y1="74" x2="136" y2="74" stroke="#505070" stroke-width="1.5"/>
+                <polygon points="130,70 136,74 130,78" fill="#505070"/>
+                <!-- 3x3 output -->
+                <g>
+                  <rect x="142" y="44" width="60" height="60" rx="2" fill="rgba(247,200,110,0.06)" stroke="#f7c86e" stroke-width="1"/>
+                  <line x1="162" y1="44" x2="162" y2="104" stroke="#f7c86e" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="182" y1="44" x2="182" y2="104" stroke="#f7c86e" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="142" y1="64" x2="202" y2="64" stroke="#f7c86e" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="142" y1="84" x2="202" y2="84" stroke="#f7c86e" stroke-width="0.5" opacity="0.5"/>
+                  <text x="172" y="120" text-anchor="middle" fill="#f7c86e" font-size="8">3×3 salida</text>
+                </g>
+
+                <!-- CON PADDING -->
+                <text x="380" y="16" text-anchor="middle" fill="#6ee7f7" font-size="9" font-weight="bold">padding = 1  →  salida conservada</text>
+                <!-- 7x7 padded input (5+2) -->
+                <g>
+                  <!-- padding border (zeros) -->
+                  <rect x="265" y="24" width="120" height="120" rx="2" fill="rgba(80,80,112,0.1)" stroke="#505070" stroke-width="1" stroke-dasharray="3,2"/>
+                  <!-- real 5x5 data -->
+                  <rect x="283" y="42" width="84" height="84" rx="1" fill="rgba(110,231,247,0.06)" stroke="#6ee7f7" stroke-width="0.5" opacity="0.6"/>
+                  <!-- grid -->
+                  <line x1="283" y1="24" x2="283" y2="144" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="301" y1="24" x2="301" y2="144" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="319" y1="24" x2="319" y2="144" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="337" y1="24" x2="337" y2="144" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="355" y1="24" x2="355" y2="144" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="265" y1="42" x2="385" y2="42" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="265" y1="60" x2="385" y2="60" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="265" y1="78" x2="385" y2="78" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="265" y1="96" x2="385" y2="96" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="265" y1="114" x2="385" y2="114" stroke="#252535" stroke-width="0.5" opacity="0.5"/>
+                  <!-- zeros labels -->
+                  <text x="274" y="37" text-anchor="middle" fill="#505070" font-size="7">0</text>
+                  <text x="274" y="55" text-anchor="middle" fill="#505070" font-size="7">0</text>
+                  <text x="274" y="74" text-anchor="middle" fill="#505070" font-size="7">0</text>
+                  <text x="274" y="92" text-anchor="middle" fill="#505070" font-size="7">0</text>
+                  <text x="274" y="110" text-anchor="middle" fill="#505070" font-size="7">0</text>
+                  <text x="274" y="129" text-anchor="middle" fill="#505070" font-size="7">0</text>
+                  <text x="325" y="34" text-anchor="middle" fill="#505070" font-size="7">0 0 0 0 0 0 0</text>
+                  <text x="325" y="140" text-anchor="middle" fill="#505070" font-size="7">0 0 0 0 0 0 0</text>
+                  <text x="325" y="158" text-anchor="middle" fill="#505070" font-size="8">7×7 (con p=1)</text>
+                </g>
+                <!-- kernel at top-left of real data -->
+                <rect x="265" y="24" width="54" height="54" rx="1" fill="rgba(247,200,110,0.2)" stroke="#f7c86e" stroke-width="1.5"/>
+                <!-- arrow + output -->
+                <line x1="391" y1="84" x2="411" y2="84" stroke="#505070" stroke-width="1.5"/>
+                <polygon points="405,80 411,84 405,88" fill="#505070"/>
+                <!-- 5x5 output (same size!) -->
+                <g>
+                  <rect x="417" y="44" width="100" height="100" rx="2" fill="rgba(110,231,247,0.08)" stroke="#6ee7f7" stroke-width="1.5"/>
+                  <line x1="437" y1="44" x2="437" y2="144" stroke="#6ee7f7" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="457" y1="44" x2="457" y2="144" stroke="#6ee7f7" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="477" y1="44" x2="477" y2="144" stroke="#6ee7f7" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="497" y1="44" x2="497" y2="144" stroke="#6ee7f7" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="417" y1="64" x2="517" y2="64" stroke="#6ee7f7" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="417" y1="84" x2="517" y2="84" stroke="#6ee7f7" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="417" y1="104" x2="517" y2="104" stroke="#6ee7f7" stroke-width="0.5" opacity="0.5"/>
+                  <line x1="417" y1="124" x2="517" y2="124" stroke="#6ee7f7" stroke-width="0.5" opacity="0.5"/>
+                  <text x="467" y="158" text-anchor="middle" fill="#6ee7f7" font-size="8">5×5 salida ✓</text>
+                </g>
+                <!-- Nota -->
+                <rect x="10" y="180" width="500" height="34" rx="2" fill="rgba(110,231,247,0.04)" stroke="rgba(110,231,247,0.15)" stroke-width="1"/>
+                <text x="260" y="196" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">padding "same": p = (k − 1) / 2  →  Con k=3: p=1 · Con k=5: p=2 · Con k=7: p=3</text>
+                <text x="260" y="208" text-anchor="middle" fill="#505070" font-size="7.5">En PyTorch: padding='same' (solo con stride=1) o calcular manualmente</text>
+              </svg>
+            </div>
+          </div>
+          <div class="code-section">
+            <h3>// Python · padding</h3>
+            <pre><span class="cm"># Sin padding: la salida se reduce</span>
+conv_valid = nn.<span class="fn">Conv2d</span>(<span class="st">1</span>, <span class="st">1</span>, kernel_size=<span class="st">3</span>, padding=<span class="st">0</span>)
+<span class="cm"># 5×5 entrada → 3×3 salida</span>
+
+<span class="cm"># Con padding=1: conserva tamaño (k=3)</span>
+conv_same = nn.<span class="fn">Conv2d</span>(<span class="st">1</span>, <span class="st">1</span>, kernel_size=<span class="st">3</span>, padding=<span class="st">1</span>)
+<span class="cm"># 5×5 entrada → 5×5 salida</span>
+
+<span class="cm"># PyTorch: padding='same' (stride=1 obligatorio)</span>
+conv_auto = nn.<span class="fn">Conv2d</span>(<span class="st">1</span>, <span class="st">1</span>, kernel_size=<span class="st">3</span>,
+                        padding=<span class="st">'same'</span>)
+
+<span class="cm"># Tipos de padding en PyTorch</span>
+<span class="cm"># padding_mode='zeros'     (default)</span>
+<span class="cm"># padding_mode='reflect'</span>
+<span class="cm"># padding_mode='replicate'</span>
+<span class="cm"># padding_mode='circular'</span>
+
+<span class="cm"># Regla: padding = (k-1)//2 conserva tamaño</span>
+<span class="kw">def</span> <span class="fn">same_padding</span>(k): <span class="kw">return</span> (k - <span class="st">1</span>) // <span class="st">2</span></pre>
+          </div>
+        </div>
+        <div class="details-section">
+          <button class="details-toggle" onclick="toggleDetails(this)">
+            <span class="toggle-label">▸ Detalles del parámetro</span>
+            <span class="arrow">›</span>
+          </button>
+          <div class="details-body">
+            <div class="detail-grid">
+              <div><div class="detail-label">Efecto con p=0</div><div class="detail-val">"valid" padding — salida se reduce</div></div>
+              <div><div class="detail-label">Efecto con p=(k-1)/2</div><div class="detail-val">"same" padding — salida = entrada</div></div>
+              <div><div class="detail-label">Tipo de relleno</div><div class="detail-val">Ceros (por defecto en PyTorch)</div></div>
+              <div><div class="detail-label">Cuándo usar</div><div class="detail-val">Siempre que quieras preservar resolución</div></div>
+            </div>
+            <div class="tag-list">
+              <span class="tag highlight">same padding</span>
+              <span class="tag highlight">valid padding</span>
+              <span class="tag">Zero padding</span>
+              <span class="tag">Resolución</span>
+            </div>
+            <div class="novelty-box">
+              <strong>¿Cuándo usar padding?</strong><br>
+              En la mayoría de capas intermedias se usa <em>padding="same"</em> para preservar la resolución y permitir que las capas de pooling o strided convolutions sean los únicos responsables de la reducción espacial. Sin padding, la imagen se encoge con cada capa y los píxeles del borde tienen menos influencia en la salida.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /panel-padding -->
+
+    <!-- ══════════════════════════════════════ STRIDE ══ -->
+    <div class="panel" id="panel-stride">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="arch-year">// Parámetro 3</div>
+            <div class="arch-name">stride</div>
+            <div class="arch-sub">Paso del kernel sobre la imagen de entrada</div>
+          </div>
+          <span class="badge badge-purple">Submuestreo</span>
+        </div>
+        <div class="card-body-grid">
+          <div class="diagram-section">
+            <h3>// stride=1 vs stride=2 (k=3, p=0, entrada 5×5)</h3>
+            <div class="diagram-svg-wrap">
+              <svg width="520" height="230" viewBox="0 0 520 230" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+                <!-- STRIDE 1 -->
+                <text x="100" y="15" text-anchor="middle" fill="#6ee7f7" font-size="9" font-weight="bold">stride = 1  →  9 posiciones</text>
+                <!-- Input grid 5x5 -->
+                <g>
+                  <rect x="10" y="22" width="100" height="100" rx="2" fill="rgba(110,231,247,0.05)" stroke="#6ee7f7" stroke-width="0.8"/>
+                  <line x1="30" y1="22" x2="30" y2="122" stroke="#6ee7f7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="50" y1="22" x2="50" y2="122" stroke="#6ee7f7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="70" y1="22" x2="70" y2="122" stroke="#6ee7f7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="90" y1="22" x2="90" y2="122" stroke="#6ee7f7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="10" y1="42" x2="110" y2="42" stroke="#6ee7f7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="10" y1="62" x2="110" y2="62" stroke="#6ee7f7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="10" y1="82" x2="110" y2="82" stroke="#6ee7f7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="10" y1="102" x2="110" y2="102" stroke="#6ee7f7" stroke-width="0.3" opacity="0.4"/>
+                  <!-- 9 kernel positions (3x3 output) -->
+                  <rect x="10" y="22" width="60" height="60" rx="1" fill="rgba(247,200,110,0.12)" stroke="#f7c86e" stroke-width="1" stroke-dasharray="3,2"/>
+                  <rect x="30" y="22" width="60" height="60" rx="1" fill="rgba(247,200,110,0.08)" stroke="#f7c86e" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.6"/>
+                  <rect x="50" y="22" width="60" height="60" rx="1" fill="rgba(247,200,110,0.06)" stroke="#f7c86e" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.4"/>
+                  <rect x="10" y="42" width="60" height="60" rx="1" fill="rgba(247,200,110,0.06)" stroke="#f7c86e" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.4"/>
+                </g>
+                <!-- arrow -->
+                <line x1="116" y1="72" x2="136" y2="72" stroke="#505070" stroke-width="1.5"/>
+                <polygon points="130,68 136,72 130,76" fill="#505070"/>
+                <!-- 3x3 output -->
+                <rect x="142" y="42" width="60" height="60" rx="2" fill="rgba(247,200,110,0.1)" stroke="#f7c86e" stroke-width="1.5"/>
+                <line x1="162" y1="42" x2="162" y2="102" stroke="#f7c86e" stroke-width="0.5" opacity="0.5"/>
+                <line x1="182" y1="42" x2="182" y2="102" stroke="#f7c86e" stroke-width="0.5" opacity="0.5"/>
+                <line x1="142" y1="62" x2="202" y2="62" stroke="#f7c86e" stroke-width="0.5" opacity="0.5"/>
+                <line x1="142" y1="82" x2="202" y2="82" stroke="#f7c86e" stroke-width="0.5" opacity="0.5"/>
+                <text x="172" y="118" text-anchor="middle" fill="#f7c86e" font-size="8">3×3 salida</text>
+                <text x="60" y="136" text-anchor="middle" fill="#505070" font-size="7.5">el kernel se mueve 1 px a la vez</text>
+
+                <!-- STRIDE 2 -->
+                <text x="380" y="15" text-anchor="middle" fill="#b06ef7" font-size="9" font-weight="bold">stride = 2  →  4 posiciones</text>
+                <g>
+                  <rect x="270" y="22" width="100" height="100" rx="2" fill="rgba(176,110,247,0.05)" stroke="#b06ef7" stroke-width="0.8"/>
+                  <line x1="290" y1="22" x2="290" y2="122" stroke="#b06ef7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="310" y1="22" x2="310" y2="122" stroke="#b06ef7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="330" y1="22" x2="330" y2="122" stroke="#b06ef7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="350" y1="22" x2="350" y2="122" stroke="#b06ef7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="270" y1="42" x2="370" y2="42" stroke="#b06ef7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="270" y1="62" x2="370" y2="62" stroke="#b06ef7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="270" y1="82" x2="370" y2="82" stroke="#b06ef7" stroke-width="0.3" opacity="0.4"/>
+                  <line x1="270" y1="102" x2="370" y2="102" stroke="#b06ef7" stroke-width="0.3" opacity="0.4"/>
+                  <!-- 4 kernel positions -->
+                  <rect x="270" y="22" width="60" height="60" rx="1" fill="rgba(247,200,110,0.18)" stroke="#f7c86e" stroke-width="1.5"/>
+                  <rect x="310" y="22" width="60" height="60" rx="1" fill="rgba(247,200,110,0.1)" stroke="#f7c86e" stroke-width="1" stroke-dasharray="3,2" opacity="0.7"/>
+                  <rect x="270" y="62" width="60" height="60" rx="1" fill="rgba(247,200,110,0.1)" stroke="#f7c86e" stroke-width="1" stroke-dasharray="3,2" opacity="0.7"/>
+                  <rect x="310" y="62" width="60" height="60" rx="1" fill="rgba(247,200,110,0.06)" stroke="#f7c86e" stroke-width="1" stroke-dasharray="3,2" opacity="0.5"/>
+                  <!-- stride arrows -->
+                  <line x1="278" y1="118" x2="318" y2="118" stroke="#b06ef7" stroke-width="1.5"/>
+                  <polygon points="312,114 318,118 312,122" fill="#b06ef7"/>
+                  <text x="298" y="128" text-anchor="middle" fill="#b06ef7" font-size="7">+2</text>
+                </g>
+                <!-- arrow -->
+                <line x1="376" y1="72" x2="396" y2="72" stroke="#505070" stroke-width="1.5"/>
+                <polygon points="390,68 396,72 390,76" fill="#505070"/>
+                <!-- 2x2 output -->
+                <rect x="402" y="52" width="40" height="40" rx="2" fill="rgba(176,110,247,0.12)" stroke="#b06ef7" stroke-width="1.5"/>
+                <line x1="422" y1="52" x2="422" y2="92" stroke="#b06ef7" stroke-width="0.7" opacity="0.7"/>
+                <line x1="402" y1="72" x2="442" y2="72" stroke="#b06ef7" stroke-width="0.7" opacity="0.7"/>
+                <text x="422" y="105" text-anchor="middle" fill="#b06ef7" font-size="8">2×2 salida</text>
+                <text x="380" y="136" text-anchor="middle" fill="#505070" font-size="7.5">el kernel salta 2 px → submuestrea</text>
+
+                <!-- Comparación final -->
+                <rect x="10" y="150" width="500" height="70" rx="2" fill="rgba(176,110,247,0.04)" stroke="rgba(176,110,247,0.15)" stroke-width="1"/>
+                <text x="260" y="168" text-anchor="middle" fill="#b06ef7" font-size="8.5" font-weight="bold">stride ≥ 2 como alternativa a MaxPooling</text>
+                <text x="260" y="184" text-anchor="middle" fill="#505070" font-size="8">MaxPool 2×2 + Conv 3×3  ≈  Conv 3×3 stride=2  (misma reducción espacial)</text>
+                <text x="260" y="198" text-anchor="middle" fill="#505070" font-size="8">Las strided convolutions tienen parámetros aprendibles · MaxPool es fijo</text>
+                <text x="260" y="212" text-anchor="middle" fill="#6ee7f7" font-size="7.5">Usado en: ResNet (conv1), EfficientNet, MobileNet — evita MaxPool inicial</text>
+              </svg>
+            </div>
+          </div>
+          <div class="code-section">
+            <h3>// Python · stride</h3>
+            <pre><span class="cm"># stride=1 (default) — sin reducción</span>
+conv_s1 = nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">64</span>, kernel_size=<span class="st">3</span>,
+                      stride=<span class="st">1</span>, padding=<span class="st">1</span>)
+<span class="cm"># 28×28 → 28×28 (same)</span>
+
+<span class="cm"># stride=2 — divide resolución por 2</span>
+conv_s2 = nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">128</span>, kernel_size=<span class="st">3</span>,
+                      stride=<span class="st">2</span>, padding=<span class="st">1</span>)
+<span class="cm"># 28×28 → 14×14</span>
+
+<span class="cm"># Equivalente con MaxPool</span>
+maxpool_equiv = nn.<span class="fn">Sequential</span>(
+    nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">128</span>, kernel_size=<span class="st">3</span>, padding=<span class="st">1</span>),
+    nn.<span class="fn">MaxPool2d</span>(kernel_size=<span class="st">2</span>, stride=<span class="st">2</span>)
+)
+<span class="cm"># Ambos: 28×28 → 14×14</span>
+
+<span class="cm"># Primera capa de ResNet</span>
+first_layer = nn.<span class="fn">Conv2d</span>(<span class="st">3</span>, <span class="st">64</span>, kernel_size=<span class="st">7</span>,
+                           stride=<span class="st">2</span>, padding=<span class="st">3</span>)
+<span class="cm"># 224×224 → 112×112</span></pre>
+          </div>
+        </div>
+        <div class="details-section">
+          <button class="details-toggle" onclick="toggleDetails(this)">
+            <span class="toggle-label">▸ Detalles del parámetro</span>
+            <span class="arrow">›</span>
+          </button>
+          <div class="details-body">
+            <div class="detail-grid">
+              <div><div class="detail-label">Efecto en salida</div><div class="detail-val">out ≈ in / stride</div></div>
+              <div><div class="detail-label">Valores típicos</div><div class="detail-val">1 (default), 2 (downsampling)</div></div>
+              <div><div class="detail-label">Alternativa a</div><div class="detail-val">MaxPooling / AvgPooling</div></div>
+              <div><div class="detail-label">Ventaja</div><div class="detail-val">Tiene parámetros aprendibles</div></div>
+            </div>
+            <div class="tag-list">
+              <span class="tag highlight">Downsampling</span>
+              <span class="tag">Strided Conv</span>
+              <span class="tag">MaxPool</span>
+              <span class="tag">Resolución</span>
+            </div>
+            <div class="novelty-box">
+              <strong>Strided Conv vs MaxPool:</strong><br>
+              Redes modernas como ResNet y EfficientNet usan <em>convoluciones con stride=2</em> en lugar de MaxPooling para reducir la resolución, porque la convolución tiene parámetros que se aprenden durante el entrenamiento mientras que MaxPool es una operación fija. Esto da más flexibilidad al modelo para aprender cómo submuestrear.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /panel-stride -->
+
+    <!-- ══════════════════════════════════════ DILATION ══ -->
+    <div class="panel" id="panel-dilation">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="arch-year">// Parámetro 4</div>
+            <div class="arch-name">dilation</div>
+            <div class="arch-sub">Espacio entre los elementos del kernel (convolución dilatada / atrous)</div>
+          </div>
+          <span class="badge badge-purple">Avanzado</span>
+        </div>
+        <div class="card-body-grid">
+          <div class="diagram-section">
+            <h3>// Efecto de la dilatación (k=3)</h3>
+            <div class="diagram-svg-wrap">
+              <svg width="540" height="250" viewBox="0 0 540 250" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+                <!-- d=1 (normal) -->
+                <text x="80" y="14" text-anchor="middle" fill="#6ee7f7" font-size="9" font-weight="bold">d = 1  (normal)</text>
+                <!-- 7x7 input -->
+                <g opacity="0.5">
+                  <rect x="10" y="20" width="140" height="140" rx="2" fill="none" stroke="#252535" stroke-width="0.5"/>
+                  <!-- grid 7x7 (20px cells) -->
+                  <line x1="30" y1="20" x2="30" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="50" y1="20" x2="50" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="70" y1="20" x2="70" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="90" y1="20" x2="90" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="110" y1="20" x2="110" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="130" y1="20" x2="130" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="10" y1="40" x2="150" y2="40" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="10" y1="60" x2="150" y2="60" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="10" y1="80" x2="150" y2="80" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="10" y1="100" x2="150" y2="100" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="10" y1="120" x2="150" y2="120" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="10" y1="140" x2="150" y2="140" stroke="#252535" stroke-width="0.3"/>
+                </g>
+                <!-- kernel 3x3 d=1: consecutive cells -->
+                <rect x="30" y="40" width="20" height="20" rx="1" fill="rgba(110,231,247,0.7)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <rect x="50" y="40" width="20" height="20" rx="1" fill="rgba(110,231,247,0.7)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <rect x="70" y="40" width="20" height="20" rx="1" fill="rgba(110,231,247,0.7)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <rect x="30" y="60" width="20" height="20" rx="1" fill="rgba(110,231,247,0.7)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <rect x="50" y="60" width="20" height="20" rx="1" fill="rgba(110,231,247,0.9)" stroke="#6ee7f7" stroke-width="2"/>
+                <rect x="70" y="60" width="20" height="20" rx="1" fill="rgba(110,231,247,0.7)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <rect x="30" y="80" width="20" height="20" rx="1" fill="rgba(110,231,247,0.7)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <rect x="50" y="80" width="20" height="20" rx="1" fill="rgba(110,231,247,0.7)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <rect x="70" y="80" width="20" height="20" rx="1" fill="rgba(110,231,247,0.7)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <text x="80" y="176" text-anchor="middle" fill="#505070" font-size="7.5">k_eff = 3×3 px</text>
+                <text x="80" y="188" text-anchor="middle" fill="#505070" font-size="7.5">parámetros: 9</text>
+                <text x="80" y="200" text-anchor="middle" fill="#6ee7f7" font-size="7.5">campo receptivo: 3×3</text>
+
+                <!-- d=2 -->
+                <text x="280" y="14" text-anchor="middle" fill="#f7c86e" font-size="9" font-weight="bold">d = 2  (dilatado)</text>
+                <g opacity="0.5">
+                  <rect x="160" y="20" width="140" height="140" rx="2" fill="none" stroke="#252535" stroke-width="0.5"/>
+                  <line x1="180" y1="20" x2="180" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="200" y1="20" x2="200" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="220" y1="20" x2="220" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="240" y1="20" x2="240" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="260" y1="20" x2="260" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="280" y1="20" x2="280" y2="160" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="160" y1="40" x2="300" y2="40" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="160" y1="60" x2="300" y2="60" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="160" y1="80" x2="300" y2="80" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="160" y1="100" x2="300" y2="100" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="160" y1="120" x2="300" y2="120" stroke="#252535" stroke-width="0.3"/>
+                  <line x1="160" y1="140" x2="300" y2="140" stroke="#252535" stroke-width="0.3"/>
+                </g>
+                <!-- kernel 3x3 d=2: skip 1 cell between -->
+                <!-- active cells: (0,0),(0,2),(0,4),(2,0),(2,2),(2,4),(4,0),(4,2),(4,4) in 20px steps -->
+                <!-- gap cells (gray) -->
+                <rect x="180" y="40" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="220" y="40" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="160" y="60" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="180" y="60" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="220" y="60" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="240" y="60" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="180" y="80" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="220" y="80" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="160" y="100" x2="300" stroke="#252535"/>
+                <rect x="180" y="100" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="220" y="100" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="240" y="100" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="180" y="120" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <rect x="220" y="120" width="20" height="20" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <!-- active cells (amber) -->
+                <rect x="160" y="40" width="20" height="20" rx="1" fill="rgba(247,200,110,0.8)" stroke="#f7c86e" stroke-width="1.5"/>
+                <rect x="200" y="40" width="20" height="20" rx="1" fill="rgba(247,200,110,0.8)" stroke="#f7c86e" stroke-width="1.5"/>
+                <rect x="240" y="40" width="20" height="20" rx="1" fill="rgba(247,200,110,0.8)" stroke="#f7c86e" stroke-width="1.5"/>
+                <rect x="160" y="80" width="20" height="20" rx="1" fill="rgba(247,200,110,0.8)" stroke="#f7c86e" stroke-width="1.5"/>
+                <rect x="200" y="80" width="20" height="20" rx="1" fill="rgba(247,200,110,0.9)" stroke="#f7c86e" stroke-width="2"/>
+                <rect x="240" y="80" width="20" height="20" rx="1" fill="rgba(247,200,110,0.8)" stroke="#f7c86e" stroke-width="1.5"/>
+                <rect x="160" y="120" width="20" height="20" rx="1" fill="rgba(247,200,110,0.8)" stroke="#f7c86e" stroke-width="1.5"/>
+                <rect x="200" y="120" width="20" height="20" rx="1" fill="rgba(247,200,110,0.8)" stroke="#f7c86e" stroke-width="1.5"/>
+                <rect x="240" y="120" width="20" height="20" rx="1" fill="rgba(247,200,110,0.8)" stroke="#f7c86e" stroke-width="1.5"/>
+                <text x="230" y="176" text-anchor="middle" fill="#505070" font-size="7.5">k_eff = 5×5 px (d×(k-1)+1 = 2×2+1)</text>
+                <text x="230" y="188" text-anchor="middle" fill="#505070" font-size="7.5">parámetros: 9 (igual que d=1)</text>
+                <text x="230" y="200" text-anchor="middle" fill="#f7c86e" font-size="7.5">campo receptivo: 5×5  →  más contexto</text>
+
+                <!-- Legend -->
+                <rect x="340" y="50" width="14" height="14" rx="1" fill="rgba(247,200,110,0.8)" stroke="#f7c86e" stroke-width="1"/>
+                <text x="360" y="61" fill="#f7c86e" font-size="8">Elemento activo del kernel</text>
+                <rect x="340" y="75" width="14" height="14" rx="1" fill="rgba(80,80,112,0.3)" stroke="#505070" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <text x="360" y="86" fill="#505070" font-size="8">Celda ignorada (gap)</text>
+
+                <!-- Nota aplicaciones -->
+                <rect x="10" y="210" width="520" height="34" rx="2" fill="rgba(247,200,110,0.04)" stroke="rgba(247,200,110,0.15)" stroke-width="1"/>
+                <text x="270" y="226" text-anchor="middle" fill="#f7c86e" font-size="8" font-weight="bold">Usos de convoluciones dilatadas (atrous): segmentación semántica, WaveNet, audio generation</text>
+                <text x="270" y="238" text-anchor="middle" fill="#505070" font-size="7.5">DeepLab v3 usa d=[6,12,18] en paralelo (ASPP) para capturar múltiples escalas sin reducir resolución</text>
+              </svg>
+            </div>
+          </div>
+          <div class="code-section">
+            <h3>// Python · dilation</h3>
+            <pre><span class="cm"># Convolución dilatada (atrous)</span>
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+<span class="cm"># d=1: convolución normal</span>
+conv_d1 = nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">64</span>, kernel_size=<span class="st">3</span>,
+                      dilation=<span class="st">1</span>, padding=<span class="st">1</span>)
+
+<span class="cm"># d=2: campo receptivo 5×5 con 9 params</span>
+conv_d2 = nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">64</span>, kernel_size=<span class="st">3</span>,
+                      dilation=<span class="st">2</span>, padding=<span class="st">2</span>)
+<span class="cm"># padding = dilation para conservar tamaño</span>
+
+<span class="cm"># d=4: campo receptivo 9×9</span>
+conv_d4 = nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">64</span>, kernel_size=<span class="st">3</span>,
+                      dilation=<span class="st">4</span>, padding=<span class="st">4</span>)
+
+<span class="cm"># ASPP (Atrous Spatial Pyramid Pooling)</span>
+<span class="cm"># usado en DeepLab v3 para segmentación</span>
+aspp = nn.<span class="fn">ModuleList</span>([
+    nn.<span class="fn">Conv2d</span>(<span class="st">256</span>, <span class="st">256</span>, <span class="st">3</span>, dilation=<span class="st">6</span>,  padding=<span class="st">6</span>),
+    nn.<span class="fn">Conv2d</span>(<span class="st">256</span>, <span class="st">256</span>, <span class="st">3</span>, dilation=<span class="st">12</span>, padding=<span class="st">12</span>),
+    nn.<span class="fn">Conv2d</span>(<span class="st">256</span>, <span class="st">256</span>, <span class="st">3</span>, dilation=<span class="st">18</span>, padding=<span class="st">18</span>),
+])</pre>
+          </div>
+        </div>
+        <div class="details-section">
+          <button class="details-toggle" onclick="toggleDetails(this)">
+            <span class="toggle-label">▸ Detalles del parámetro</span>
+            <span class="arrow">›</span>
+          </button>
+          <div class="details-body">
+            <div class="detail-grid">
+              <div><div class="detail-label">Kernel efectivo</div><div class="detail-val">k_eff = d × (k-1) + 1</div></div>
+              <div><div class="detail-label">Parámetros</div><div class="detail-val">Igual que d=1 (solo k²×C_in×C_out)</div></div>
+              <div><div class="detail-label">Padding recomendado</div><div class="detail-val">p = d (con k=3 para conservar tamaño)</div></div>
+              <div><div class="detail-label">Aplicaciones</div><div class="detail-val">Segmentación, audio (WaveNet), detección</div></div>
+            </div>
+            <div class="tag-list">
+              <span class="tag highlight">Atrous Conv</span>
+              <span class="tag highlight">Campo receptivo grande</span>
+              <span class="tag">ASPP</span>
+              <span class="tag">DeepLab</span>
+              <span class="tag">WaveNet</span>
+              <span class="tag">Sin parámetros extra</span>
+            </div>
+            <div class="novelty-box">
+              <strong>¿Por qué usar dilatación?</strong><br>
+              La dilatación permite expandir el campo receptivo <em>exponencialmente</em> sin aumentar el número de parámetros ni reducir la resolución. Con d=1,2,4,8 apiladas, el campo receptivo crece como 3, 7, 15, 31 píxeles. Esto es especialmente valioso en segmentación semántica donde se necesita contexto amplio pero se quiere mantener la resolución espacial alta para localizar con precisión.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /panel-dilation -->
+
+  </div>
+  </div><!-- /content-area -->
+</div><!-- /app-shell -->
+
+<script>
+/* ── INTERACTIVE EXPLORER ── */
+let params = { H:7, k:3, p:0, s:1, d:1 };
+let currentStep = 0;
+
+function outSize(H,k,p,s,d) {
+  const ke = d*(k-1)+1;
+  return Math.floor((H+2*p-ke)/s)+1;
+}
+
+function render() {
+  const {H,k,p,s,d} = params;
+  const out = outSize(H,k,p,s,d);
+  const ke = d*(k-1)+1;
+  const inv = out<=0;
+
+  document.getElementById('val-H').textContent=H;
+  document.getElementById('val-k').textContent=k;
+  document.getElementById('val-p').textContent=p;
+  document.getElementById('val-s').textContent=s;
+  document.getElementById('val-d').textContent=d;
+
+  const ft = document.getElementById('formula-txt');
+  ft.innerHTML = `<span class="dim">out =</span> <span class="hl">⌊(${H} + 2×${p} − ${ke-1} − 1) / ${s}⌋ + 1${inv?'':'  =  '+out}</span>`;
+
+  const ba = document.getElementById('badge-area');
+  ba.innerHTML='';
+  const b1=document.createElement('span');
+  b1.className='res-badge'+(inv?' err':'');
+  b1.textContent=inv?'inválido':`salida: ${out}×${out}`;
+  ba.appendChild(b1);
+  if(!inv){
+    const b2=document.createElement('span');
+    b2.className='res-badge warn';
+    b2.textContent=`k_eff: ${ke}×${ke}`;
+    ba.appendChild(b2);
+  }
+
+  const im=document.getElementById('invalid-msg');
+  im.style.display=inv?'':'none';
+  if(inv) im.textContent=`Inválido: k_eff (${ke}) > H+2p (${H+2*p})`;
+
+  if(!inv){
+    if(currentStep>=out*out) currentStep=0;
+    updateSteps(out);
+    drawInput(out);
+    drawPositions(out);
+    drawOutput(out);
+  }
+  updateCode(out, ke, inv);
+}
+
+function updateSteps(out){
+  const row=document.getElementById('step-row');
+  row.innerHTML='';
+  const n=Math.min(out*out,40);
+  for(let i=0;i<n;i++){
+    const b=document.createElement('button');
+    b.className='step-btn'+(i===currentStep?' active':'');
+    b.textContent=String(i);
+    b.onclick=()=>{currentStep=i;render();};
+    row.appendChild(b);
+  }
+  if(out*out>40){
+    const s=document.createElement('span');
+    s.className='step-more';
+    s.textContent=`… ${out*out} posiciones`;
+    row.appendChild(s);
+  }
+}
+
+function cellColor(type){
+  const dark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const t={
+    input:    {fill:'rgba(110,231,247,0.12)', stroke:'#6ee7f7'},
+    pad:      {fill:'rgba(80,80,112,0.2)',   stroke:'#505070'},
+    kernel:   {fill:'rgba(247,200,110,0.5)', stroke:'#f7c86e'},
+    dil:      {fill:'rgba(176,110,247,0.25)',stroke:'#b06ef7'},
+    outfill:  {fill:'rgba(110,231,247,0.5)', stroke:'#6ee7f7'},
+    outprev:  {fill:'rgba(110,231,247,0.18)',stroke:'#6ee7f7'},
+    outblank: {fill:'rgba(80,80,112,0.1)',   stroke:'#252535'},
+  };
+  return t[type]||t.input;
+}
+
+function drawGrid(canvasId, total, cellFn){
+  const cv=document.getElementById(canvasId);
+  const sz=Math.min(Math.floor(154/total),22);
+  const W=total*sz+4;
+  cv.width=Math.max(W,40); cv.height=Math.max(W,40);
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  for(let r=0;r<total;r++){
+    for(let c=0;c<total;c++){
+      const {fill,stroke}=cellFn(r,c);
+      const x=2+c*sz, y=2+r*sz;
+      ctx.fillStyle=fill;
+      ctx.strokeStyle=stroke;
+      ctx.lineWidth=0.8;
+      ctx.beginPath();
+      ctx.roundRect(x+1,y+1,sz-2,sz-2,2);
+      ctx.fill(); ctx.stroke();
+    }
+  }
+}
+
+function drawInput(out){
+  const {H,k,p,s,d}=params;
+  const total=H+2*p;
+  const ke=d*(k-1)+1;
+  const stepC=currentStep%out, stepR=Math.floor(currentStep/out);
+  const ox=stepC*s, oy=stepR*s;
+  drawGrid('cv-in',total,(r,c)=>{
+    const isP=r<p||r>=H+p||c<p||c>=H+p;
+    if(isP) return cellColor('pad');
+    const dr=r-oy,dc=c-ox;
+    if(dr>=0&&dr<ke&&dc>=0&&dc<ke){
+      return (dr%d===0&&dc%d===0)?cellColor('kernel'):cellColor('dil');
+    }
+    return cellColor('input');
+  });
+}
+
+function drawPositions(out){
+  const {H,k,p,s,d}=params;
+  const total=H+2*p;
+  const ke=d*(k-1)+1;
+  drawGrid('cv-pos',total,(r,c)=>{
+    const isP=r<p||r>=H+p||c<p||c>=H+p;
+    // Check if this cell is covered by current step's kernel
+    const stepC=currentStep%out,stepR=Math.floor(currentStep/out);
+    const dr=r-stepR*s,dc=c-stepC*s;
+    if(dr>=0&&dr<ke&&dc>=0&&dc<ke&&dr%d===0&&dc%d===0) return cellColor('kernel');
+    // Check if covered by any previous step
+    for(let si=0;si<currentStep;si++){
+      const sc=si%out,sr=Math.floor(si/out);
+      const dr2=r-sr*s,dc2=c-sc*s;
+      if(dr2>=0&&dr2<ke&&dc2>=0&&dc2<ke&&dr2%d===0&&dc2%d===0) return cellColor('outprev');
+    }
+    return isP?cellColor('pad'):cellColor('input');
+  });
+}
+
+function drawOutput(out){
+  const cv=document.getElementById('cv-out');
+  const sz=Math.min(Math.floor(154/out),28);
+  cv.width=out*sz+4; cv.height=out*sz+4;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  for(let r=0;r<out;r++){
+    for(let c=0;c<out;c++){
+      const idx=r*out+c;
+      const {fill,stroke}=(idx===currentStep)?cellColor('outfill'):(idx<currentStep)?cellColor('outprev'):cellColor('outblank');
+      const x=2+c*sz,y=2+r*sz;
+      ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.roundRect(x+1,y+1,sz-2,sz-2,2);
+      ctx.fill();ctx.stroke();
+    }
+  }
+}
+
+function updateCode(out, ke, inv){
+  const {H,k,p,s,d}=params;
+  const dStr=d>1?`, dilation=<span class="st">${d}</span>`:'';
+  const pStr=p>0?`, padding=<span class="st">${p}</span>`:'';
+  const sStr=s>1?`, stride=<span class="st">${s}</span>`:'';
+  document.getElementById('code-live').innerHTML=
+`<span class="cm"># PyTorch — parámetros actuales</span>
+<span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+conv = nn.<span class="fn">Conv2d</span>(
+    in_channels=<span class="st">1</span>,
+    out_channels=<span class="st">1</span>,
+    kernel_size=<span class="st">${k}</span>${sStr}${pStr}${dStr}
+)
+
+x = torch.<span class="fn">randn</span>(<span class="st">1</span>, <span class="st">1</span>, <span class="st">${H}</span>, <span class="st">${H}</span>)  <span class="cm"># (N, C, H, W)</span>
+y = conv(x)
+<span class="cm"># y.shape → (1, 1, ${inv?'?':out}, ${inv?'?':out})</span>
+
+<span class="cm"># Fórmula: ⌊(H + 2p − d(k−1) − 1) / s⌋ + 1</span>
+<span class="cm"># ⌊(${H} + ${2*p} − ${ke-1} − 1) / ${s}⌋ + 1 = ${inv?'inválido':out}</span>`;
+}
+
+['H','k','p','s','d'].forEach(name=>{
+  document.getElementById('sl-'+name).addEventListener('input',e=>{
+    params[name]=+e.target.value;
+    currentStep=0;
+    render();
+  });
+});
+render();
+
+/* ── TABS ── */
+function activateTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+document.addEventListener('click',function(e){
+  const btn=e.target.closest('.tab-btn');
+  if(!btn) return;
+  activateTab(btn.dataset.tab);
+  const mob=document.querySelectorAll('#tabs-mobile .tab-btn');
+  mob.forEach(b=>{if(b.dataset.tab===btn.dataset.tab) b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});});
+});
+
+/* ── ACCORDION ── */
+function toggleDetails(btn){
+  const body=btn.nextElementSibling;
+  const open=body.classList.contains('open');
+  body.classList.toggle('open',!open);
+  btn.classList.toggle('open',!open);
+  btn.querySelector('.toggle-label').textContent=(open?'▸':'▾')+' '+(btn.querySelector('.toggle-label').textContent.slice(2).trim());
+}
+
+/* ── KEYBOARD NAVIGATION ── */
+const TABS=['explorer','kernel','padding','stride','dilation'];
+document.addEventListener('keydown',function(e){
+  if(['ArrowRight','ArrowLeft','ArrowDown','ArrowUp'].includes(e.key)){
+    const ap=document.querySelector('.panel.active');
+    if(!ap) return;
+    const cur=ap.id.replace('panel-','');
+    const idx=TABS.indexOf(cur);
+    const next=(e.key==='ArrowRight'||e.key==='ArrowDown')
+      ?TABS[Math.min(idx+1,TABS.length-1)]
+      :TABS[Math.max(idx-1,0)];
+    activateTab(next);
+  }
+});
+
+/* ── LIGHTBOX ── */
+(function(){
+  const lb=document.getElementById('lightbox');
+  const lbView=document.getElementById('lightbox-viewport');
+  const lbTitle=document.getElementById('lightbox-title');
+  const lbCounter=document.getElementById('lightbox-counter');
+  const lbPrev=document.getElementById('lb-prev');
+  const lbNext=document.getElementById('lb-next');
+  const lbClose=document.getElementById('lb-close');
+  const lbZoomIn=document.getElementById('lb-zoom-in');
+  const lbZoomOut=document.getElementById('lb-zoom-out');
+  const lbZoomReset=document.getElementById('lb-zoom-reset');
+  let wraps=[],idx=0,scale=1,scaler=null;
+
+  function getWraps(){
+    const p=document.querySelector('.panel.active');
+    return p?Array.from(p.querySelectorAll('.diagram-svg-wrap')):[];
+  }
+  function setScale(s){
+    scale=Math.max(0.3,Math.min(4,s));
+    if(scaler) scaler.style.transform=`scale(${scale})`;
+    lbZoomReset.textContent=Math.round(scale*100)+'%';
+  }
+  function openAt(i){
+    wraps=getWraps();
+    if(!wraps.length) return;
+    idx=Math.max(0,Math.min(i,wraps.length-1));
+    const wrap=wraps[idx];
+    const svgs=wrap.querySelectorAll('svg');
+    lbView.innerHTML='<span id="lightbox-hint">scroll para mover · rueda para zoom · Esc para cerrar</span>';
+    const sc=document.createElement('div');
+    sc.style.cssText='display:flex;flex-direction:column;align-items:center;transition:transform 0.15s ease;transform-origin:center top;';
+    svgs.forEach(svg=>{
+      const cl=svg.cloneNode(true);
+      cl.style.width=svg.getAttribute('width')+'px';
+      cl.style.height=svg.getAttribute('height')+'px';
+      cl.style.maxWidth='none';cl.style.maxHeight='none';
+      cl.style.display='block';cl.style.margin='0 auto 1.5rem';
+      sc.appendChild(cl);
+    });
+    lbView.insertBefore(sc,lbView.lastElementChild);
+    scaler=sc;
+    const h3=wrap.closest('.diagram-section')?.querySelector('h3');
+    lbTitle.textContent=h3?h3.textContent:'// Diagrama';
+    lbCounter.textContent=wraps.length>1?`${idx+1} / ${wraps.length}`:'';
+    lbPrev.disabled=idx===0; lbNext.disabled=idx===wraps.length-1;
+    scale=1;setScale(1);
+    lb.classList.add('open');
+    document.body.style.overflow='hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    document.body.style.overflow='';
+    lbView.innerHTML='<span id="lightbox-hint">scroll para mover · rueda para zoom · Esc para cerrar</span>';
+    scaler=null;
+  }
+  document.addEventListener('click',function(e){
+    const w=e.target.closest('.diagram-svg-wrap');
+    if(!w||lb.contains(e.target)) return;
+    const ws=getWraps();
+    const i=ws.indexOf(w);
+    openAt(i>=0?i:0);
+  });
+  lbClose.addEventListener('click',close);
+  lb.addEventListener('click',e=>{if(e.target===lb)close();});
+  lbPrev.addEventListener('click',()=>openAt(idx-1));
+  lbNext.addEventListener('click',()=>openAt(idx+1));
+  lbZoomIn.addEventListener('click',()=>setScale(scale*1.25));
+  lbZoomOut.addEventListener('click',()=>setScale(scale/1.25));
+  lbZoomReset.addEventListener('click',()=>setScale(1));
+  lbView.addEventListener('wheel',function(e){
+    e.preventDefault();
+    setScale(scale*(e.deltaY<0?1.1:0.9));
+  },{passive:false});
+  document.addEventListener('keydown',function(e){
+    if(!lb.classList.contains('open')) return;
+    if(e.key==='Escape'){close();e.stopPropagation();}
+    if(e.key==='ArrowLeft'&&!lbPrev.disabled) openAt(idx-1);
+    if(e.key==='ArrowRight'&&!lbNext.disabled) openAt(idx+1);
+    if(e.key==='+'||e.key==='=') setScale(scale*1.2);
+    if(e.key==='-') setScale(scale/1.2);
+    if(e.key==='0') setScale(1);
+  });
+})();
+</script>
+</body>
+</html>
