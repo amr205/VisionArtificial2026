@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Materials</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #252535;
+    --accent: #6ee7f7;
+    --accent2: #f7c86e;
+    --accent3: #b06ef7;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 3rem 2rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; left: -80px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(110,231,247,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; right: 3%;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(176,110,247,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  h1 span { color: var(--accent); }
+  .header-sub {
+    margin-top: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  /* ── CONFIG BANNER ── */
+  .config-banner {
+    margin: 1.5rem 2rem 0;
+    padding: 1rem 1.25rem;
+    background: rgba(247,200,110,0.06);
+    border: 1px solid rgba(247,200,110,0.2);
+    border-radius: 3px;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent2);
+    line-height: 1.6;
+  }
+  .config-banner.hidden { display: none; }
+  .config-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.05rem; }
+  .config-banner code {
+    background: rgba(247,200,110,0.12);
+    padding: 0.1em 0.4em;
+    border-radius: 2px;
+    font-size: 0.72rem;
+  }
+
+  /* ── MAIN ── */
+  main {
+    flex: 1;
+    padding: 2rem;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+  .stat-chip {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.35em 0.9em;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: opacity 0.3s;
+  }
+  .stat-chip.cyan   { background: rgba(110,231,247,0.1); color: var(--accent); border: 1px solid rgba(110,231,247,0.2); }
+  .stat-chip.gold   { background: rgba(247,200,110,0.1); color: var(--accent2); border: 1px solid rgba(247,200,110,0.2); }
+  .stat-chip.purple { background: rgba(176,110,247,0.1); color: var(--accent3); border: 1px solid rgba(176,110,247,0.2); }
+  .stat-chip.loading { opacity: 0.4; }
+
+  /* ── SEARCH ── */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+  .search-icon {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    pointer-events: none;
+  }
+  #search {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.7rem 1rem 0.7rem 2.5rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #search::placeholder { color: var(--muted); }
+  #search:focus { border-color: var(--accent); }
+
+  /* ── SECTION HEADER ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── FILE LIST ── */
+  #file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .file-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    animation: fadeUp 0.3s ease both;
+  }
+  .file-card:hover {
+    border-color: var(--accent);
+    background: var(--surface2);
+    transform: translateX(3px);
+  }
+  .file-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 2rem;
+    text-align: center;
+  }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-meta {
+    margin-top: 0.2rem;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+  .file-badge {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    padding: 0.25em 0.6em;
+    border-radius: 2px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .badge-html  { background: rgba(110,231,247,0.12); color: var(--accent); border: 1px solid rgba(110,231,247,0.25); }
+  .badge-pdf   { background: rgba(247,100,80,0.12);  color: #f7806e; border: 1px solid rgba(247,100,80,0.25); }
+  .badge-ipynb { background: rgba(247,200,110,0.12); color: var(--accent2); border: 1px solid rgba(247,200,110,0.25); }
+  .badge-py    { background: rgba(110,200,110,0.12); color: #8ef7a0; border: 1px solid rgba(110,200,110,0.25); }
+  .badge-md    { background: rgba(176,110,247,0.12); color: var(--accent3); border: 1px solid rgba(176,110,247,0.25); }
+  .badge-file  { background: rgba(112,112,160,0.12); color: var(--muted); border: 1px solid rgba(112,112,160,0.2); }
+
+  /* ── STATES ── */
+  .state-box {
+    text-align: center;
+    padding: 3rem 2rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    border: 1px dashed var(--border);
+    border-radius: 3px;
+  }
+  .state-box .state-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+  .state-box p { margin-top: 0.4rem; }
+  .state-box a { color: var(--accent); }
+
+  /* ── SKELETON ── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+  .skeleton-row {
+    height: 64px;
+    margin-bottom: 0.5rem;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ── EMPTY SEARCH ── */
+  #no-results { display: none; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  #last-updated { opacity: 0.6; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    header, main { padding-left: 1rem; padding-right: 1rem; }
+    .config-banner { margin-left: 1rem; margin-right: 1rem; }
+    footer { padding-left: 1rem; padding-right: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     ⚙️  CONFIGURATION — edit these two lines
+     ════════════════════════════════════════ -->
+<script>
+  const GITHUB_USER = "YOUR_USERNAME";   // ← your GitHub username
+  const GITHUB_REPO = "YOUR_REPO";       // ← your repository name
+  const BRANCH      = "main";            // ← branch (main / master / gh-pages)
+  const TITLE       = "Class Materials"; // ← page title shown in header
+  const SUBTITLE    = "Browse and open files directly in your browser.";
+  // Files/folders to hide from the listing (exact name match)
+  const EXCLUDE     = ["index.html", ".gitignore", "README.md", "LICENSE"];
+</script>
+<!-- ════════════════════════════════════════ -->
+
+<header>
+  <div class="header-label" id="header-label">// GitHub Pages · File Index</div>
+  <h1 id="page-title">Loading<span>...</span></h1>
+  <p class="header-sub" id="page-sub"></p>
+</header>
+
+<div class="config-banner hidden" id="config-banner">
+  <span class="config-icon">⚠</span>
+  <span id="config-msg"></span>
+</div>
+
+<main>
+  <div class="stats-row">
+    <span class="stat-chip cyan loading" id="stat-files">— files</span>
+    <span class="stat-chip gold loading" id="stat-repo">—</span>
+    <span class="stat-chip purple loading" id="stat-branch">— branch</span>
+  </div>
+
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Filter files…" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="section-label">Files</div>
+
+  <!-- Skeleton loaders -->
+  <div id="skeleton">
+    <div class="skeleton skeleton-row"></div>
+    <div class="skeleton skeleton-row"></div>
+    <div class="skeleton skeleton-row"></div>
+  </div>
+
+  <div id="file-list"></div>
+
+  <div class="state-box hidden" id="no-results">
+    <div class="state-icon">⊘</div>
+    <div>No files match "<span id="search-term"></span>"</div>
+  </div>
+
+  <div class="state-box hidden" id="error-box">
+    <div class="state-icon">✕</div>
+    <div id="error-msg">Could not load files.</div>
+    <p>Make sure <code>GITHUB_USER</code> and <code>GITHUB_REPO</code> are set correctly in <code>index.html</code>.</p>
+  </div>
+</main>
+
+<footer>
+  <span>
+    <a id="repo-link" href="#" target="_blank">View repository ↗</a>
+  </span>
+  <span id="last-updated"></span>
+</footer>
+
+<script>
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  const EXT_META = {
+    html:  { icon: '🌐', badge: 'badge-html',  label: 'HTML'  },
+    pdf:   { icon: '📄', badge: 'badge-pdf',   label: 'PDF'   },
+    ipynb: { icon: '📓', badge: 'badge-ipynb', label: 'Notebook' },
+    py:    { icon: '🐍', badge: 'badge-py',    label: 'Python' },
+    md:    { icon: '📝', badge: 'badge-md',    label: 'Markdown' },
+    jpg:   { icon: '🖼', badge: 'badge-file',  label: 'Image' },
+    jpeg:  { icon: '🖼', badge: 'badge-file',  label: 'Image' },
+    png:   { icon: '🖼', badge: 'badge-file',  label: 'Image' },
+    svg:   { icon: '🖼', badge: 'badge-file',  label: 'SVG'   },
+    csv:   { icon: '📊', badge: 'badge-file',  label: 'CSV'   },
+    xlsx:  { icon: '📊', badge: 'badge-file',  label: 'Excel' },
+    pptx:  { icon: '📑', badge: 'badge-file',  label: 'Slides'},
+    docx:  { icon: '📃', badge: 'badge-file',  label: 'Word'  },
+    zip:   { icon: '📦', badge: 'badge-file',  label: 'ZIP'   },
+    json:  { icon: '🗂', badge: 'badge-py',    label: 'JSON'  },
+    txt:   { icon: '📄', badge: 'badge-md',    label: 'Text'  },
+  };
+
+  function getMeta(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    return EXT_META[ext] || { icon: '📁', badge: 'badge-file', label: ext.toUpperCase() || 'File' };
+  }
+
+  function formatSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function isConfigured() {
+    return GITHUB_USER !== 'YOUR_USERNAME' && GITHUB_REPO !== 'YOUR_REPO';
+  }
+
+  // ── DOM refs ─────────────────────────────────────────────────────────────────
+  const fileList   = document.getElementById('file-list');
+  const skeleton   = document.getElementById('skeleton');
+  const noResults  = document.getElementById('no-results');
+  const errorBox   = document.getElementById('error-box');
+  const searchEl   = document.getElementById('search');
+  const statFiles  = document.getElementById('stat-files');
+  const statRepo   = document.getElementById('stat-repo');
+  const statBranch = document.getElementById('stat-branch');
+
+  // ── Page meta ─────────────────────────────────────────────────────────────
+  document.title = TITLE;
+  document.getElementById('page-title').innerHTML = TITLE.replace(/([\w]+)$/, '<span>$1</span>');
+  document.getElementById('page-sub').textContent = SUBTITLE;
+  const repoLink = document.getElementById('repo-link');
+  repoLink.href = `https://github.com/${GITHUB_USER}/${GITHUB_REPO}`;
+  statBranch.textContent = BRANCH + ' branch';
+  statBranch.classList.remove('loading');
+  statRepo.textContent = `${GITHUB_USER}/${GITHUB_REPO}`;
+  statRepo.classList.remove('loading');
+
+  // ── Config warning ────────────────────────────────────────────────────────
+  if (!isConfigured()) {
+    const banner = document.getElementById('config-banner');
+    banner.classList.remove('hidden');
+    document.getElementById('config-msg').innerHTML =
+      `Open <code>index.html</code> and set <code>GITHUB_USER</code> and <code>GITHUB_REPO</code> ` +
+      `at the top of the &lt;script&gt; block. Then push to GitHub Pages.`;
+  }
+
+  // ── All files (populated after fetch) ────────────────────────────────────
+  let allFiles = [];
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function renderFiles(files) {
+    fileList.innerHTML = '';
+    if (files.length === 0) return;
+
+    files.forEach((f, i) => {
+      const meta = getMeta(f.name);
+      const pageUrl = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/${f.path}`;
+      const rawUrl  = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${BRANCH}/${f.path}`;
+
+      // For HTML files → open as page; for others → raw download
+      const href = f.name.endsWith('.html') ? pageUrl : rawUrl;
+
+      const card = document.createElement('a');
+      card.className = 'file-card';
+      card.href = href;
+      card.target = '_blank';
+      card.rel = 'noopener';
+      card.style.animationDelay = `${i * 40}ms`;
+      card.innerHTML = `
+        <span class="file-icon">${meta.icon}</span>
+        <span class="file-info">
+          <span class="file-name">${f.path}</span>
+          <span class="file-meta">${formatSize(f.size)}${f.size ? ' · ' : ''}${href}</span>
+        </span>
+        <span class="file-badge ${meta.badge}">${meta.label}</span>
+      `;
+      fileList.appendChild(card);
+    });
+  }
+
+  // ── Filter ────────────────────────────────────────────────────────────────
+  function applyFilter(query) {
+    const q = query.toLowerCase().trim();
+    const filtered = q
+      ? allFiles.filter(f => f.path.toLowerCase().includes(q))
+      : allFiles;
+
+    renderFiles(filtered);
+
+    noResults.classList.toggle('hidden', filtered.length > 0 || q === '');
+    document.getElementById('search-term').textContent = q;
+  }
+
+  searchEl.addEventListener('input', () => applyFilter(searchEl.value));
+
+  // ── Fetch from GitHub API ─────────────────────────────────────────────────
+  async function fetchTree() {
+    const api = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/git/trees/${BRANCH}?recursive=1`;
+    const res = await fetch(api, {
+      headers: { 'Accept': 'application/vnd.github+json' }
+    });
+    if (!res.ok) throw new Error(`GitHub API ${res.status}: ${res.statusText}`);
+    return res.json();
+  }
+
+  async function init() {
+    if (!isConfigured()) {
+      skeleton.style.display = 'none';
+      statFiles.textContent = '— files';
+      return;
+    }
+
+    try {
+      const data = await fetchTree();
+
+      // Filter: only blobs (files), not trees (dirs), not excluded names
+      allFiles = data.tree
+        .filter(item =>
+          item.type === 'blob' &&
+          !EXCLUDE.includes(item.path.split('/').pop()) &&
+          !item.path.startsWith('.')
+        )
+        .map(item => ({ name: item.path.split('/').pop(), path: item.path, size: item.size }))
+        .sort((a, b) => a.path.localeCompare(b.path));
+
+      skeleton.style.display = 'none';
+      renderFiles(allFiles);
+
+      // Stats
+      statFiles.textContent = `${allFiles.length} file${allFiles.length !== 1 ? 's' : ''}`;
+      statFiles.classList.remove('loading');
+
+      // Last updated
+      document.getElementById('last-updated').textContent =
+        'Loaded ' + new Date().toLocaleTimeString();
+
+    } catch (err) {
+      skeleton.style.display = 'none';
+      errorBox.classList.remove('hidden');
+      document.getElementById('error-msg').textContent = err.message;
+      statFiles.textContent = 'Error';
+      console.error(err);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
