@@ -32,10 +32,15 @@
 
   /* HEADER */
   header {
-    padding: 3rem 2rem 2rem;
+    padding: 2.5rem 2rem 2rem;
     border-bottom: 1px solid var(--border);
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
   }
   header::before {
     content: '';
@@ -75,10 +80,11 @@
     font-family: var(--mono);
   }
   .header-meta {
-    margin-top: 1.5rem;
     display: flex;
-    gap: 1.5rem;
+    gap: 0.75rem;
     flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
   }
   .badge {
     font-family: var(--mono);
@@ -92,86 +98,198 @@
   .badge-gold  { background: rgba(247,200,110,0.12); color: var(--accent2); border: 1px solid rgba(247,200,110,0.25); }
   .badge-purple{ background: rgba(176,110,247,0.12); color: var(--accent3); border: 1px solid rgba(176,110,247,0.25); }
 
-  /* TIMELINE TABS */
-  .timeline-wrap {
-    position: relative;
-    padding: 2rem 2rem 0;
-  }
-  .timeline-bar {
-    position: absolute;
-    top: 2.85rem;
-    left: 2rem; right: 2rem;
-    height: 1px;
-    background: var(--border);
-  }
-  .tabs-scroll {
-    overflow-x: auto;
-    scrollbar-width: none;
-    position: relative;
-    z-index: 1;
-  }
-  .tabs-scroll::-webkit-scrollbar { display: none; }
-  .tabs {
+  /* ── APP SHELL: sidebar + main ── */
+  .app-shell {
     display: flex;
-    gap: 0;
-    min-width: max-content;
-    padding-bottom: 0;
+    min-height: calc(100vh - 160px); /* leave room for header */
+  }
+
+  /* ── SIDEBAR (vertical timeline, wide screens) ── */
+  .sidebar {
+    width: 200px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 2rem 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .sidebar-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0 1.25rem 1rem;
+    opacity: 0.6;
+  }
+  .sidebar-timeline {
+    position: relative;
+    padding-left: 1.25rem;
+  }
+  .sidebar-timeline::before {
+    content: '';
+    position: absolute;
+    left: 2rem;
+    top: 0.55rem;
+    bottom: 0.55rem;
+    width: 1px;
+    background: var(--border);
   }
   .tab-btn {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0 1.5rem 1.5rem;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 0;
     background: none;
     border: none;
     cursor: pointer;
     position: relative;
     transition: all 0.2s;
+    text-align: left;
   }
   .tab-dot {
     width: 10px; height: 10px;
     border-radius: 50%;
     background: var(--border);
     border: 2px solid var(--border);
+    flex-shrink: 0;
     transition: all 0.25s;
     position: relative;
     z-index: 1;
+    margin-left: 0.75rem;
   }
   .tab-btn:hover .tab-dot { background: var(--muted); border-color: var(--muted); }
-  .tab-btn.active .tab-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px rgba(110,231,247,0.5); }
+  .tab-btn.active .tab-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(110,231,247,0.5); }
+  .tab-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
   .tab-year {
     font-family: var(--mono);
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: var(--muted);
     transition: color 0.2s;
   }
   .tab-name {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 700;
     color: var(--muted);
     transition: color 0.2s;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .tab-btn:hover .tab-name,
   .tab-btn:hover .tab-year { color: var(--text); }
   .tab-btn.active .tab-name { color: var(--accent); }
   .tab-btn.active .tab-year { color: var(--accent); opacity: 0.7; }
-  .tab-btn::after {
+  .tab-btn::before {
     content: '';
     position: absolute;
-    bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 0; height: 2px;
-    background: var(--accent);
-    transition: width 0.25s;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: rgba(110,231,247,0.07);
+    transition: width 0.2s;
+    border-radius: 0 3px 3px 0;
   }
-  .tab-btn.active::after { width: 100%; }
+  .tab-btn.active::before { width: 100%; }
 
-  /* PANELS */
-  .panels { padding: 0 2rem 4rem; }
+  /* ── CONTENT AREA ── */
+  .content-area {
+    flex: 1;
+    min-width: 0;
+    padding: 2rem;
+  }
+
+  /* ── PANELS ── */
   .panel { display: none; animation: fadeUp 0.35s ease; }
-  .panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-  @media (max-width: 900px) { .panel.active { grid-template-columns: 1fr; } }
+  .panel.active { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+
+  /* Wide: 2 columns */
+  @media (min-width: 1100px) {
+    .panel.active { grid-template-columns: 1fr 1fr; }
+  }
+  /* Very wide: diagram+code side by side within single card via inner grid */
+  @media (min-width: 1400px) {
+    .card-body-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .card-body-grid .diagram-section {
+      border-right: 1px solid var(--border);
+      border-top: none;
+    }
+    .card-body-grid .code-section {
+      border-top: none;
+    }
+  }
+
+  /* ── HORIZONTAL TIMELINE (compact, mobile/tablet only) ── */
+  .timeline-wrap { display: none; }
+  .scroll-hint   { display: none; }
+
+  @media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { display: none; }
+    .timeline-wrap {
+      display: block;
+      position: relative;
+      padding: 2rem 1.5rem 0;
+    }
+    .timeline-bar {
+      position: absolute;
+      top: 2.85rem;
+      left: 1.5rem; right: 1.5rem;
+      height: 1px;
+      background: var(--border);
+    }
+    .tabs-scroll {
+      overflow-x: auto;
+      scrollbar-width: none;
+      position: relative;
+      z-index: 1;
+    }
+    .tabs-scroll::-webkit-scrollbar { display: none; }
+    .tabs {
+      display: flex;
+      gap: 0;
+      min-width: max-content;
+    }
+    /* Override sidebar tab-btn styles for horizontal mode */
+    .tab-btn {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0 1.25rem 1.25rem;
+      width: auto;
+    }
+    .tab-dot { margin-left: 0; }
+    .tab-text { align-items: center; }
+    .tab-name { white-space: nowrap; font-size: 0.75rem; }
+    .tab-btn::before { display: none; }
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 0; height: 2px;
+      background: var(--accent);
+      transition: width 0.25s;
+    }
+    .tab-btn.active::after { width: 100%; }
+    .scroll-hint {
+      display: block;
+      text-align: center;
+      padding: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--muted);
+    }
+    .content-area { padding: 1.25rem 1rem; }
+    .panel.active { grid-template-columns: 1fr; }
+  }
 
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(12px); }
@@ -184,6 +302,8 @@
     border: 1px solid var(--border);
     border-radius: 4px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   .card-header {
     padding: 1.5rem;
@@ -342,28 +462,8 @@
   }
   .novelty-box strong { color: var(--accent); }
 
-  /* RIGHT COLUMN - spans both cards visually */
-  .right-col { display: flex; flex-direction: column; gap: 1.5rem; }
-  .full-card { grid-column: 1 / -1; }
-
-  /* SCROLL hint */
-  .scroll-hint {
-    text-align: center;
-    padding: 0.5rem;
-    font-family: var(--mono);
-    font-size: 0.6rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-  }
-
-  /* Responsive */
-  @media (max-width: 600px) {
-    header { padding: 2rem 1rem 1.5rem; }
-    .timeline-wrap { padding: 1.5rem 1rem 0; }
-    .timeline-bar { left: 1rem; right: 1rem; }
-    .panels { padding: 0 1rem 3rem; }
-    .tab-btn { padding: 0 1rem 1.5rem; }
-  }
+  /* DETAILS expand fills card */
+  .details-section { margin-top: auto; }
 </style>
 </head>
 <body>
@@ -379,63 +479,49 @@
   </div>
 </header>
 
-<!-- TIMELINE TABS -->
+<!-- MOBILE: horizontal timeline (hidden on wide screens) -->
 <div class="timeline-wrap">
   <div class="timeline-bar"></div>
   <div class="tabs-scroll">
-    <div class="tabs" id="tabs">
-      <button class="tab-btn active" data-tab="lenet">
-        <div class="tab-dot"></div>
-        <div class="tab-year">1998</div>
-        <div class="tab-name">LeNet-5</div>
-      </button>
-      <button class="tab-btn" data-tab="alexnet">
-        <div class="tab-dot"></div>
-        <div class="tab-year">2012</div>
-        <div class="tab-name">AlexNet</div>
-      </button>
-      <button class="tab-btn" data-tab="vgg">
-        <div class="tab-dot"></div>
-        <div class="tab-year">2014</div>
-        <div class="tab-name">VGGNet</div>
-      </button>
-      <button class="tab-btn" data-tab="inception">
-        <div class="tab-dot"></div>
-        <div class="tab-year">2014</div>
-        <div class="tab-name">Inception v1</div>
-      </button>
-      <button class="tab-btn" data-tab="resnet">
-        <div class="tab-dot"></div>
-        <div class="tab-year">2015</div>
-        <div class="tab-name">ResNet</div>
-      </button>
-      <button class="tab-btn" data-tab="densenet">
-        <div class="tab-dot"></div>
-        <div class="tab-year">2017</div>
-        <div class="tab-name">DenseNet</div>
-      </button>
-      <button class="tab-btn" data-tab="mobilenet">
-        <div class="tab-dot"></div>
-        <div class="tab-year">2017</div>
-        <div class="tab-name">MobileNet</div>
-      </button>
-      <button class="tab-btn" data-tab="efficientnet">
-        <div class="tab-dot"></div>
-        <div class="tab-year">2019</div>
-        <div class="tab-name">EfficientNet</div>
-      </button>
-      <button class="tab-btn" data-tab="vit">
-        <div class="tab-dot"></div>
-        <div class="tab-year">2020</div>
-        <div class="tab-name">ViT</div>
-      </button>
+    <div class="tabs" id="tabs-mobile">
+      <button class="tab-btn active" data-tab="lenet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">1998</div><div class="tab-name">LeNet-5</div></div></button>
+      <button class="tab-btn" data-tab="alexnet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2012</div><div class="tab-name">AlexNet</div></div></button>
+      <button class="tab-btn" data-tab="vgg"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2014</div><div class="tab-name">VGGNet</div></div></button>
+      <button class="tab-btn" data-tab="inception"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2014</div><div class="tab-name">Inception v1</div></div></button>
+      <button class="tab-btn" data-tab="resnet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2015</div><div class="tab-name">ResNet</div></div></button>
+      <button class="tab-btn" data-tab="densenet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2017</div><div class="tab-name">DenseNet</div></div></button>
+      <button class="tab-btn" data-tab="mobilenet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2017</div><div class="tab-name">MobileNet</div></div></button>
+      <button class="tab-btn" data-tab="efficientnet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2019</div><div class="tab-name">EfficientNet</div></div></button>
+      <button class="tab-btn" data-tab="vit"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2020</div><div class="tab-name">ViT</div></div></button>
     </div>
   </div>
   <div class="scroll-hint">← scroll →</div>
 </div>
 
-<!-- PANELS -->
-<div class="panels">
+<!-- APP SHELL: sidebar + content -->
+<div class="app-shell">
+
+  <!-- SIDEBAR (visible on wide screens) -->
+  <nav class="sidebar">
+    <div class="sidebar-label">// Timeline</div>
+    <div class="sidebar-timeline">
+      <div class="tabs" id="tabs">
+        <button class="tab-btn active" data-tab="lenet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">1998</div><div class="tab-name">LeNet-5</div></div></button>
+        <button class="tab-btn" data-tab="alexnet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2012</div><div class="tab-name">AlexNet</div></div></button>
+        <button class="tab-btn" data-tab="vgg"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2014</div><div class="tab-name">VGGNet</div></div></button>
+        <button class="tab-btn" data-tab="inception"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2014</div><div class="tab-name">Inception v1</div></div></button>
+        <button class="tab-btn" data-tab="resnet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2015</div><div class="tab-name">ResNet</div></div></button>
+        <button class="tab-btn" data-tab="densenet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2017</div><div class="tab-name">DenseNet</div></div></button>
+        <button class="tab-btn" data-tab="mobilenet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2017</div><div class="tab-name">MobileNet</div></div></button>
+        <button class="tab-btn" data-tab="efficientnet"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2019</div><div class="tab-name">EfficientNet</div></div></button>
+        <button class="tab-btn" data-tab="vit"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2020</div><div class="tab-name">ViT</div></div></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="content-area">
+<div class="panels" style="padding:0 0 4rem;"
 
   <!-- LeNet-5 -->
   <div class="panel active" id="panel-lenet">
@@ -449,7 +535,7 @@
         </div>
         <span class="badge badge-cyan">Pioneer</span>
       </div>
-      <div class="diagram-section">
+      <div class="card-body-grid"><div class="diagram-section">
         <h3>// Arquitectura</h3>
         <div class="diagram-svg-wrap">
           <svg width="560" height="160" viewBox="0 0 560 160" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
@@ -559,6 +645,7 @@
 
 model = <span class="fn">LeNet5</span>()</pre>
       </div>
+      </div>
       <div class="details-section">
         <button class="details-toggle" onclick="toggleDetails(this)">
           <span class="toggle-label">▸ Detalles de la arquitectura</span>
@@ -619,7 +706,7 @@ model = <span class="fn">LeNet5</span>()</pre>
         </div>
         <span class="badge badge-gold">Breakthrough</span>
       </div>
-      <div class="diagram-section">
+      <div class="card-body-grid"><div class="diagram-section">
         <h3>// Arquitectura</h3>
         <div class="diagram-svg-wrap">
           <svg width="580" height="165" viewBox="0 0 580 165" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
@@ -709,6 +796,7 @@ model.classifier[<span class="st">6</span>] = nn.<span class="fn">Linear</span>(
 <span class="cm"># from tensorflow.keras.applications import ResNet50</span>
 <span class="cm"># (AlexNet no está en keras.applications directamente)</span></pre>
       </div>
+      </div>
       <div class="details-section">
         <button class="details-toggle" onclick="toggleDetails(this)">
           <span class="toggle-label">▸ Detalles de la arquitectura</span>
@@ -754,64 +842,104 @@ model.classifier[<span class="st">6</span>] = nn.<span class="fn">Linear</span>(
         </div>
         <span class="badge badge-cyan">Elegance</span>
       </div>
-      <div class="diagram-section">
-        <h3>// Arquitectura VGG-16</h3>
+      <div class="card-body-grid"><div class="diagram-section">
+        <h3>// Arquitectura VGG-16 · cada bloque = N × [Conv3×3 → ReLU] → MaxPool</h3>
         <div class="diagram-svg-wrap">
-          <svg width="560" height="165" viewBox="0 0 560 165" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
-            <!-- Bloque 1 -->
-            <rect x="4" y="45" width="22" height="70" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <rect x="28" y="45" width="22" height="70" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <text x="27" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B1</text>
-            <text x="27" y="140" text-anchor="middle" fill="#505070" font-size="7">64ch</text>
-            <!-- pool -->
-            <rect x="54" y="58" width="14" height="44" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
-            <!-- Bloque 2 -->
-            <rect x="72" y="42" width="22" height="76" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <rect x="96" y="42" width="22" height="76" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <text x="96" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B2</text>
-            <text x="96" y="140" text-anchor="middle" fill="#505070" font-size="7">128ch</text>
-            <!-- pool -->
-            <rect x="122" y="55" width="14" height="50" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
-            <!-- Bloque 3 -->
-            <rect x="140" y="38" width="18" height="84" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <rect x="160" y="38" width="18" height="84" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <rect x="180" y="38" width="18" height="84" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <text x="170" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B3</text>
-            <text x="170" y="140" text-anchor="middle" fill="#505070" font-size="7">256ch</text>
-            <!-- pool -->
-            <rect x="202" y="52" width="14" height="56" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
-            <!-- Bloque 4 -->
-            <rect x="220" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <rect x="240" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <rect x="260" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <text x="250" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B4</text>
-            <text x="250" y="140" text-anchor="middle" fill="#505070" font-size="7">512ch</text>
-            <!-- pool -->
-            <rect x="282" y="48" width="14" height="64" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
-            <!-- Bloque 5 -->
-            <rect x="300" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <rect x="320" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <rect x="340" y="30" width="18" height="100" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <text x="330" y="130" text-anchor="middle" fill="#6ee7f7" font-size="7">B5</text>
-            <text x="330" y="140" text-anchor="middle" fill="#505070" font-size="7">512ch</text>
-            <!-- pool -->
-            <rect x="362" y="50" width="14" height="60" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
-            <!-- FC layers -->
-            <line x1="376" y1="80" x2="388" y2="80" stroke="#252535" stroke-width="1.5"/>
-            <polygon points="388,76 394,80 388,84" fill="#252535"/>
-            <rect x="394" y="60" width="24" height="40" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
-            <text x="406" y="130" text-anchor="middle" fill="#b06ef7" font-size="7">FC</text>
-            <text x="406" y="140" text-anchor="middle" fill="#505070" font-size="7">4096</text>
-            <line x1="418" y1="80" x2="428" y2="80" stroke="#252535" stroke-width="1.5"/>
-            <polygon points="428,76 434,80 428,84" fill="#252535"/>
-            <rect x="434" y="62" width="24" height="36" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
-            <line x1="458" y1="80" x2="468" y2="80" stroke="#252535" stroke-width="1.5"/>
-            <polygon points="468,76 474,80 468,84" fill="#252535"/>
-            <rect x="474" y="68" width="60" height="24" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
-            <text x="504" y="130" text-anchor="middle" fill="#f7c86e" font-size="7">Softmax</text>
-            <text x="504" y="140" text-anchor="middle" fill="#505070" font-size="7">1000</text>
-            <!-- Label all 3×3 -->
-            <text x="280" y="16" text-anchor="middle" fill="#505070" font-size="7">Todos los Conv son 3×3 — la simplicidad es la clave</text>
+          <svg width="620" height="230" viewBox="0 0 620 230" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- ── INPUT ── -->
+            <rect x="4" y="70" width="36" height="72" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <text x="22" y="156" text-anchor="middle" fill="#6ee7f7" font-size="7.5">Input</text>
+            <text x="22" y="166" text-anchor="middle" fill="#505070" font-size="7">224×224×3</text>
+            <line x1="40" y1="106" x2="52" y2="106" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="52,102 58,106 52,110" fill="#505070"/>
+
+            <!-- ── BLOQUE 1: 2× Conv64 ── -->
+            <rect x="58" y="58" width="60" height="96" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+            <text x="88" y="74" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">Bloque 1</text>
+            <rect x="64" y="80" width="48" height="18" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
+            <text x="88" y="93" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×64</text>
+            <rect x="64" y="102" width="48" height="18" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <text x="88" y="115" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×64</text>
+            <rect x="64" y="124" width="48" height="18" rx="1" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="88" y="137" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">MaxPool 2×2</text>
+            <text x="88" y="168" text-anchor="middle" fill="#505070" font-size="6.5">112×112×64</text>
+            <line x1="118" y1="106" x2="130" y2="106" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="130,102 136,106 130,110" fill="#505070"/>
+
+            <!-- ── BLOQUE 2: 2× Conv128 ── -->
+            <rect x="136" y="50" width="60" height="112" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+            <text x="166" y="66" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">Bloque 2</text>
+            <rect x="142" y="72" width="48" height="18" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
+            <text x="166" y="85" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×128</text>
+            <rect x="142" y="94" width="48" height="18" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <text x="166" y="107" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×128</text>
+            <rect x="142" y="116" width="48" height="18" rx="1" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="166" y="129" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">MaxPool 2×2</text>
+            <text x="166" y="176" text-anchor="middle" fill="#505070" font-size="6.5">56×56×128</text>
+            <line x1="196" y1="106" x2="208" y2="106" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="208,102 214,106 208,110" fill="#505070"/>
+
+            <!-- ── BLOQUE 3: 3× Conv256 ── -->
+            <rect x="214" y="40" width="60" height="128" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+            <text x="244" y="56" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">Bloque 3</text>
+            <rect x="220" y="62" width="48" height="16" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
+            <text x="244" y="74" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×256</text>
+            <rect x="220" y="82" width="48" height="16" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.65"/>
+            <text x="244" y="94" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×256</text>
+            <rect x="220" y="102" width="48" height="16" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
+            <text x="244" y="114" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×256</text>
+            <rect x="220" y="122" width="48" height="16" rx="1" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="244" y="134" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">MaxPool 2×2</text>
+            <text x="244" y="182" text-anchor="middle" fill="#505070" font-size="6.5">28×28×256</text>
+            <line x1="274" y1="106" x2="286" y2="106" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="286,102 292,106 286,110" fill="#505070"/>
+
+            <!-- ── BLOQUE 4: 3× Conv512 ── -->
+            <rect x="292" y="30" width="60" height="148" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+            <text x="322" y="46" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">Bloque 4</text>
+            <rect x="298" y="52" width="48" height="16" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.8"/>
+            <text x="322" y="64" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×512</text>
+            <rect x="298" y="72" width="48" height="16" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.65"/>
+            <text x="322" y="84" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×512</text>
+            <rect x="298" y="92" width="48" height="16" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.5"/>
+            <text x="322" y="104" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×512</text>
+            <rect x="298" y="112" width="48" height="16" rx="1" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="322" y="124" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">MaxPool 2×2</text>
+            <text x="322" y="192" text-anchor="middle" fill="#505070" font-size="6.5">14×14×512</text>
+            <line x1="352" y1="106" x2="364" y2="106" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="364,102 370,106 364,110" fill="#505070"/>
+
+            <!-- ── BLOQUE 5: 3× Conv512 ── -->
+            <rect x="370" y="30" width="60" height="148" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+            <text x="400" y="46" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">Bloque 5</text>
+            <rect x="376" y="52" width="48" height="16" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.8"/>
+            <text x="400" y="64" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×512</text>
+            <rect x="376" y="72" width="48" height="16" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.65"/>
+            <text x="400" y="84" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×512</text>
+            <rect x="376" y="92" width="48" height="16" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.5"/>
+            <text x="400" y="104" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv3×3 ×512</text>
+            <rect x="376" y="112" width="48" height="16" rx="1" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="400" y="124" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">MaxPool 2×2</text>
+            <text x="400" y="192" text-anchor="middle" fill="#505070" font-size="6.5">7×7×512</text>
+            <line x1="430" y1="106" x2="442" y2="106" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="442,102 448,106 442,110" fill="#505070"/>
+
+            <!-- ── FC HEAD ── -->
+            <rect x="448" y="74" width="52" height="20" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="474" y="88" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">FC 4096</text>
+            <rect x="448" y="98" width="52" height="20" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.8"/>
+            <text x="474" y="112" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">FC 4096</text>
+            <rect x="448" y="122" width="52" height="20" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="474" y="136" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Softmax 1K</text>
+            <text x="474" y="192" text-anchor="middle" fill="#505070" font-size="6.5">Flatten→FC</text>
+
+            <!-- ── LEYENDA ── -->
+            <rect x="4" y="210" width="12" height="8" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="20" y="218" fill="#6ee7f7" font-size="7">Conv3×3+ReLU</text>
+            <rect x="130" y="210" width="12" height="8" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="146" y="218" fill="#b06ef7" font-size="7">Conv3×3+ReLU (512 ch)</text>
+            <rect x="310" y="210" width="12" height="8" rx="1" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="326" y="218" fill="#f7c86e" font-size="7">MaxPool 2×2 (÷2 spatial)</text>
           </svg>
         </div>
       </div>
@@ -832,6 +960,7 @@ model = <span class="fn">VGG16</span>(weights=<span class="st">'imagenet'</span>
 
 <span class="cm"># Fine-tuning en Keras</span>
 model_ft = <span class="fn">VGG16</span>(weights=<span class="st">'imagenet'</span>, include_top=<span class="nb">False</span>)</pre>
+      </div>
       </div>
       <div class="details-section">
         <button class="details-toggle" onclick="toggleDetails(this)">
@@ -875,8 +1004,71 @@ model_ft = <span class="fn">VGG16</span>(weights=<span class="st">'imagenet'</sp
         </div>
         <span class="badge badge-purple">Multi-scale</span>
       </div>
-      <div class="diagram-section">
-        <h3>// Módulo Inception</h3>
+      <div class="card-body-grid"><div class="diagram-section">
+        <h3>// Arquitectura General GoogLeNet</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="620" height="100" viewBox="0 0 620 100" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Input -->
+            <rect x="2" y="32" width="38" height="36" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <text x="21" y="54" text-anchor="middle" fill="#6ee7f7" font-size="7">224²×3</text>
+            <line x1="40" y1="50" x2="52" y2="50" stroke="#505070" stroke-width="1.5"/><polygon points="52,46 58,50 52,54" fill="#505070"/>
+            <!-- Conv 7×7 -->
+            <rect x="58" y="28" width="48" height="44" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <text x="82" y="47" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv 7×7</text>
+            <text x="82" y="58" text-anchor="middle" fill="#0a0a0f" font-size="7">64ch, /2</text>
+            <line x1="106" y1="50" x2="116" y2="50" stroke="#505070" stroke-width="1.5"/><polygon points="116,46 122,50 116,54" fill="#505070"/>
+            <!-- MaxPool -->
+            <rect x="122" y="36" width="36" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="140" y="54" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">MaxPool</text>
+            <line x1="158" y1="50" x2="168" y2="50" stroke="#505070" stroke-width="1.5"/><polygon points="168,46 174,50 168,54" fill="#505070"/>
+            <!-- Conv 1×1 + 3×3 -->
+            <rect x="174" y="28" width="52" height="44" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <text x="200" y="45" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv 1×1</text>
+            <text x="200" y="56" text-anchor="middle" fill="#0a0a0f" font-size="7">Conv 3×3</text>
+            <text x="200" y="67" text-anchor="middle" fill="#0a0a0f" font-size="6.5">192ch</text>
+            <line x1="226" y1="50" x2="236" y2="50" stroke="#505070" stroke-width="1.5"/><polygon points="236,46 242,50 236,54" fill="#505070"/>
+            <!-- MaxPool -->
+            <rect x="242" y="36" width="36" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="260" y="54" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">MaxPool</text>
+            <line x1="278" y1="50" x2="288" y2="50" stroke="#505070" stroke-width="1.5"/><polygon points="288,46 294,50 288,54" fill="#505070"/>
+            <!-- Inception x2 -->
+            <rect x="294" y="20" width="52" height="60" rx="2" fill="#1a1a26" stroke="#b06ef7" stroke-width="2"/>
+            <text x="320" y="40" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">Inception</text>
+            <text x="320" y="52" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">3a + 3b</text>
+            <text x="320" y="70" text-anchor="middle" fill="#505070" font-size="6.5">×2 módulos</text>
+            <line x1="346" y1="50" x2="356" y2="50" stroke="#505070" stroke-width="1.5"/><polygon points="356,46 362,50 356,54" fill="#505070"/>
+            <!-- MaxPool -->
+            <rect x="362" y="36" width="36" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="380" y="54" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">MaxPool</text>
+            <line x1="398" y1="50" x2="408" y2="50" stroke="#505070" stroke-width="1.5"/><polygon points="408,46 414,50 408,54" fill="#505070"/>
+            <!-- Inception x5 -->
+            <rect x="414" y="14" width="52" height="72" rx="2" fill="#1a1a26" stroke="#b06ef7" stroke-width="2"/>
+            <text x="440" y="36" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">Inception</text>
+            <text x="440" y="48" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">4a→4e</text>
+            <text x="440" y="72" text-anchor="middle" fill="#505070" font-size="6.5">×5 módulos</text>
+            <!-- Aux classifier arrow -->
+            <line x1="440" y1="14" x2="440" y2="6" stroke="#f7c86e" stroke-width="1" stroke-dasharray="3,2"/>
+            <text x="440" y="4" text-anchor="middle" fill="#f7c86e" font-size="6">Aux1</text>
+            <line x1="466" y1="50" x2="476" y2="50" stroke="#505070" stroke-width="1.5"/><polygon points="476,46 482,50 476,54" fill="#505070"/>
+            <!-- Inception x2 -->
+            <rect x="482" y="20" width="52" height="60" rx="2" fill="#1a1a26" stroke="#b06ef7" stroke-width="2"/>
+            <text x="508" y="40" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">Inception</text>
+            <text x="508" y="52" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">5a + 5b</text>
+            <text x="508" y="70" text-anchor="middle" fill="#505070" font-size="6.5">×2 módulos</text>
+            <!-- Aux2 -->
+            <line x1="508" y1="14" x2="508" y2="6" stroke="#f7c86e" stroke-width="1" stroke-dasharray="3,2"/>
+            <text x="508" y="4" text-anchor="middle" fill="#f7c86e" font-size="6">Aux2</text>
+            <line x1="534" y1="50" x2="544" y2="50" stroke="#505070" stroke-width="1.5"/><polygon points="544,46 550,50 544,54" fill="#505070"/>
+            <!-- AvgPool + FC -->
+            <rect x="550" y="34" width="64" height="32" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="582" y="48" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">AvgPool</text>
+            <text x="582" y="59" text-anchor="middle" fill="#0a0a0f" font-size="7">FC→1000</text>
+            <!-- Footnote -->
+            <text x="310" y="94" text-anchor="middle" fill="#505070" font-size="6.5">9 módulos Inception en total · 2 clasificadores auxiliares para regularización durante entrenamiento</text>
+          </svg>
+        </div>
+        <div style="margin-top:1rem;">
+        <h3>// Módulo Inception (detalle)</h3>
         <div class="diagram-svg-wrap">
           <svg width="520" height="200" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
             <!-- Input -->
@@ -911,7 +1103,7 @@ model_ft = <span class="fn">VGG16</span>(weights=<span class="st">'imagenet'</sp
             <polygon points="393,118 397,124 401,118" fill="#f7c86e"/>
             <rect x="364" y="124" width="66" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.8"/>
             <text x="397" y="138" text-anchor="middle" fill="#0a0a0f" font-size="8.5" font-weight="bold">Conv 1×1</text>
-            <!-- Concat -->
+            <!-- Concat lines -->
             <line x1="50" y1="100" x2="50" y2="166" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
             <line x1="50" y1="166" x2="240" y2="166" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
             <line x1="163" y1="152" x2="163" y2="166" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
@@ -919,7 +1111,6 @@ model_ft = <span class="fn">VGG16</span>(weights=<span class="st">'imagenet'</sp
             <line x1="397" y1="152" x2="397" y2="166" stroke="#f7c86e" stroke-width="1" opacity="0.5"/>
             <line x1="280" y1="166" x2="397" y2="166" stroke="#b06ef7" stroke-width="1" opacity="0.5"/>
             <line x1="240" y1="166" x2="330" y2="166" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
-            <!-- Concat box -->
             <rect x="160" y="170" width="160" height="26" rx="2" fill="#1a1a26" stroke="#505070" stroke-width="1"/>
             <text x="240" y="186" text-anchor="middle" fill="#e8e8f0" font-size="9" font-weight="bold">Filter Concatenation</text>
             <!-- Labels -->
@@ -928,6 +1119,7 @@ model_ft = <span class="fn">VGG16</span>(weights=<span class="st">'imagenet'</sp
             <text x="280" y="62" text-anchor="middle" fill="#b06ef7" font-size="7">5×5 reduce</text>
             <text x="397" y="62" text-anchor="middle" fill="#f7c86e" font-size="7">pool proj</text>
           </svg>
+        </div>
         </div>
       </div>
       <div class="code-section">
@@ -943,6 +1135,7 @@ model_v3 = models.<span class="fn">inception_v3</span>(weights=<span class="st">
 <span class="cm"># Con Keras</span>
 <span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> InceptionV3
 model = <span class="fn">InceptionV3</span>(weights=<span class="st">'imagenet'</span>, include_top=<span class="nb">True</span>)</pre>
+      </div>
       </div>
       <div class="details-section">
         <button class="details-toggle" onclick="toggleDetails(this)">
@@ -987,45 +1180,106 @@ model = <span class="fn">InceptionV3</span>(weights=<span class="st">'imagenet'<
         </div>
         <span class="badge badge-gold">Residual</span>
       </div>
-      <div class="diagram-section">
-        <h3>// Bloque Residual</h3>
+      <div class="card-body-grid"><div class="diagram-section">
+        <h3>// Arquitectura General ResNet-50</h3>
         <div class="diagram-svg-wrap">
-          <svg width="520" height="180" viewBox="0 0 520 180" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
-            <!-- Main path -->
-            <rect x="180" y="10" width="120" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <text x="240" y="28" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold">x  (Entrada)</text>
-            <!-- Arrow down -->
-            <line x1="240" y1="38" x2="240" y2="56" stroke="#6ee7f7" stroke-width="1.5"/>
-            <polygon points="236,56 240,62 244,56" fill="#6ee7f7"/>
-            <!-- Conv 1 -->
-            <rect x="180" y="62" width="120" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <text x="240" y="80" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold">Conv 3×3 + BN + ReLU</text>
-            <line x1="240" y1="90" x2="240" y2="108" stroke="#6ee7f7" stroke-width="1.5"/>
-            <polygon points="236,108 240,114 244,108" fill="#6ee7f7"/>
-            <!-- Conv 2 -->
-            <rect x="180" y="114" width="120" height="28" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
-            <text x="240" y="132" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold">Conv 3×3 + BN</text>
-            <!-- Skip connection -->
-            <line x1="240" y1="24" x2="400" y2="24" stroke="#f7c86e" stroke-width="2" stroke-dasharray="6,3"/>
-            <line x1="400" y1="24" x2="400" y2="142" stroke="#f7c86e" stroke-width="2" stroke-dasharray="6,3"/>
-            <line x1="400" y1="142" x2="315" y2="142" stroke="#f7c86e" stroke-width="2" stroke-dasharray="6,3"/>
-            <polygon points="315,138 309,142 315,146" fill="#f7c86e"/>
-            <!-- Plus circle -->
-            <circle cx="340" cy="142" r="14" fill="#1a1a26" stroke="#f7c86e" stroke-width="2"/>
-            <text x="340" y="147" text-anchor="middle" fill="#f7c86e" font-size="14" font-weight="bold">+</text>
-            <line x1="354" y1="142" x2="370" y2="142" stroke="#6ee7f7" stroke-width="1.5"/>
-            <polygon points="370,138 376,142 370,146" fill="#6ee7f7"/>
-            <!-- ReLU output -->
-            <rect x="376" y="128" width="80" height="28" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
-            <text x="416" y="146" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold">ReLU Output</text>
-            <!-- Skip label -->
-            <text x="400" y="18" text-anchor="middle" fill="#f7c86e" font-size="8">Skip Connection (identity)</text>
-            <!-- F(x) label -->
-            <text x="150" y="110" text-anchor="middle" fill="#6ee7f7" font-size="9">F(x)</text>
-            <text x="130" y="145" text-anchor="middle" fill="#e8e8f0" font-size="9">F(x) + x</text>
-            <!-- Parenntesis explanation -->
-            <text x="240" y="175" text-anchor="middle" fill="#505070" font-size="8">La red aprende el residuo F(x) = H(x) − x, no el mapeo directo H(x)</text>
+          <svg width="620" height="96" viewBox="0 0 620 96" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Input -->
+            <rect x="2" y="28" width="36" height="40" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <text x="20" y="51" text-anchor="middle" fill="#6ee7f7" font-size="7">224²</text>
+            <line x1="38" y1="48" x2="50" y2="48" stroke="#505070" stroke-width="1.5"/><polygon points="50,44 56,48 50,52" fill="#505070"/>
+            <!-- Conv7x7 + Pool -->
+            <rect x="56" y="20" width="56" height="56" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <text x="84" y="42" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">Conv 7×7</text>
+            <text x="84" y="53" text-anchor="middle" fill="#0a0a0f" font-size="7">64ch, /2</text>
+            <text x="84" y="64" text-anchor="middle" fill="#0a0a0f" font-size="7">MaxPool /2</text>
+            <line x1="112" y1="48" x2="124" y2="48" stroke="#505070" stroke-width="1.5"/><polygon points="124,44 130,48 124,52" fill="#505070"/>
+            <!-- Stage 1: 3 bottlenecks -->
+            <rect x="130" y="14" width="72" height="68" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+            <text x="166" y="30" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">Stage 1</text>
+            <text x="166" y="42" text-anchor="middle" fill="#505070" font-size="6.5">×3 Bottleneck</text>
+            <text x="166" y="54" text-anchor="middle" fill="#6ee7f7" font-size="7">64→256 ch</text>
+            <text x="166" y="68" text-anchor="middle" fill="#505070" font-size="6.5">56×56</text>
+            <line x1="202" y1="48" x2="214" y2="48" stroke="#505070" stroke-width="1.5"/><polygon points="214,44 220,48 214,52" fill="#505070"/>
+            <!-- Stage 2: 4 bottlenecks -->
+            <rect x="220" y="10" width="72" height="76" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+            <text x="256" y="28" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">Stage 2</text>
+            <text x="256" y="40" text-anchor="middle" fill="#505070" font-size="6.5">×4 Bottleneck</text>
+            <text x="256" y="52" text-anchor="middle" fill="#b06ef7" font-size="7">128→512 ch</text>
+            <text x="256" y="66" text-anchor="middle" fill="#505070" font-size="6.5">28×28, /2</text>
+            <line x1="292" y1="48" x2="304" y2="48" stroke="#505070" stroke-width="1.5"/><polygon points="304,44 310,48 304,52" fill="#505070"/>
+            <!-- Stage 3: 6 bottlenecks -->
+            <rect x="310" y="6" width="72" height="84" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+            <text x="346" y="24" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">Stage 3</text>
+            <text x="346" y="36" text-anchor="middle" fill="#505070" font-size="6.5">×6 Bottleneck</text>
+            <text x="346" y="48" text-anchor="middle" fill="#b06ef7" font-size="7">256→1024 ch</text>
+            <text x="346" y="62" text-anchor="middle" fill="#505070" font-size="6.5">14×14, /2</text>
+            <line x1="382" y1="48" x2="394" y2="48" stroke="#505070" stroke-width="1.5"/><polygon points="394,44 400,48 394,52" fill="#505070"/>
+            <!-- Stage 4: 3 bottlenecks -->
+            <rect x="400" y="10" width="72" height="76" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
+            <text x="436" y="28" text-anchor="middle" fill="#f7c86e" font-size="7.5" font-weight="bold">Stage 4</text>
+            <text x="436" y="40" text-anchor="middle" fill="#505070" font-size="6.5">×3 Bottleneck</text>
+            <text x="436" y="52" text-anchor="middle" fill="#f7c86e" font-size="7">512→2048 ch</text>
+            <text x="436" y="66" text-anchor="middle" fill="#505070" font-size="6.5">7×7, /2</text>
+            <line x1="472" y1="48" x2="484" y2="48" stroke="#505070" stroke-width="1.5"/><polygon points="484,44 490,48 484,52" fill="#505070"/>
+            <!-- AvgPool + FC -->
+            <rect x="490" y="24" width="60" height="48" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="520" y="42" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">AvgPool</text>
+            <text x="520" y="54" text-anchor="middle" fill="#0a0a0f" font-size="7">FC 1000</text>
+            <text x="520" y="65" text-anchor="middle" fill="#0a0a0f" font-size="7">Softmax</text>
+            <!-- Total layers annotation -->
+            <text x="310" y="94" text-anchor="middle" fill="#505070" font-size="6.5">ResNet-50: 1 Conv + 3+4+6+3 Bottlenecks + FC = 50 capas con pesos</text>
           </svg>
+        </div>
+        <div style="margin-top:1rem;">
+        <h3>// Bloque Residual (Bottleneck para ResNet-50+)</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="580" height="190" viewBox="0 0 580 190" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Two side-by-side blocks: basic (ResNet-18/34) and bottleneck (ResNet-50+) -->
+            <!-- BASIC BLOCK left -->
+            <text x="120" y="14" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">Basic Block (ResNet-18/34)</text>
+            <rect x="60" y="22" width="120" height="24" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="120" y="38" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">x (entrada, C canales)</text>
+            <line x1="120" y1="46" x2="120" y2="62" stroke="#6ee7f7" stroke-width="1.5"/><polygon points="116,62 120,68 124,62" fill="#6ee7f7"/>
+            <rect x="60" y="68" width="120" height="22" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="120" y="83" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Conv 3×3, C ch + BN + ReLU</text>
+            <line x1="120" y1="90" x2="120" y2="106" stroke="#6ee7f7" stroke-width="1.5"/><polygon points="116,106 120,112 124,106" fill="#6ee7f7"/>
+            <rect x="60" y="112" width="120" height="22" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
+            <text x="120" y="127" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Conv 3×3, C ch + BN</text>
+            <!-- skip -->
+            <line x1="120" y1="34" x2="200" y2="34" stroke="#f7c86e" stroke-width="2" stroke-dasharray="5,3"/>
+            <line x1="200" y1="34" x2="200" y2="145" stroke="#f7c86e" stroke-width="2" stroke-dasharray="5,3"/>
+            <line x1="200" y1="145" x2="162" y2="145" stroke="#f7c86e" stroke-width="2" stroke-dasharray="5,3"/>
+            <circle cx="148" cy="145" r="11" fill="#1a1a26" stroke="#f7c86e" stroke-width="2"/>
+            <text x="148" y="150" text-anchor="middle" fill="#f7c86e" font-size="12" font-weight="bold">+</text>
+            <line x1="148" y1="156" x2="148" y2="172" stroke="#6ee7f7" stroke-width="1.5"/><polygon points="144,172 148,178 152,172" fill="#6ee7f7"/>
+            <rect x="88" y="178" width="64" height="8" rx="1" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="120" y="186" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">ReLU → siguiente bloque</text>
+            <text x="200" y="30" text-anchor="start" fill="#f7c86e" font-size="7">  identity</text>
+
+            <!-- BOTTLENECK right -->
+            <text x="420" y="14" text-anchor="middle" fill="#b06ef7" font-size="8" font-weight="bold">Bottleneck (ResNet-50/101/152)</text>
+            <rect x="310" y="22" width="130" height="24" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="375" y="38" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">x (entrada, 4C canales)</text>
+            <line x1="375" y1="46" x2="375" y2="62" stroke="#b06ef7" stroke-width="1.5"/><polygon points="371,62 375,68 379,62" fill="#b06ef7"/>
+            <rect x="310" y="68" width="130" height="20" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="375" y="82" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Conv 1×1, C ch (reduce) + BN+ReLU</text>
+            <line x1="375" y1="88" x2="375" y2="104" stroke="#b06ef7" stroke-width="1.5"/><polygon points="371,104 375,110 379,104" fill="#b06ef7"/>
+            <rect x="310" y="110" width="130" height="20" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.85"/>
+            <text x="375" y="124" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Conv 3×3, C ch + BN + ReLU</text>
+            <line x1="375" y1="130" x2="375" y2="146" stroke="#b06ef7" stroke-width="1.5"/><polygon points="371,146 375,152 379,146" fill="#b06ef7"/>
+            <rect x="310" y="152" width="130" height="20" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.7"/>
+            <text x="375" y="166" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Conv 1×1, 4C ch (expand) + BN</text>
+            <!-- skip -->
+            <line x1="375" y1="34" x2="470" y2="34" stroke="#f7c86e" stroke-width="2" stroke-dasharray="5,3"/>
+            <line x1="470" y1="34" x2="470" y2="175" stroke="#f7c86e" stroke-width="2" stroke-dasharray="5,3"/>
+            <line x1="470" y1="175" x2="420" y2="175" stroke="#f7c86e" stroke-width="2" stroke-dasharray="5,3"/>
+            <circle cx="408" cy="175" r="11" fill="#1a1a26" stroke="#f7c86e" stroke-width="2"/>
+            <text x="408" y="180" text-anchor="middle" fill="#f7c86e" font-size="12" font-weight="bold">+</text>
+            <text x="472" y="30" text-anchor="start" fill="#f7c86e" font-size="7">  1×1 conv si dims cambian</text>
+            <text x="375" y="188" text-anchor="middle" fill="#505070" font-size="7">1×1 reduce → 3×3 → 1×1 expand: mismo costo que 2×Conv3×3 pero más expresivo</text>
+          </svg>
+        </div>
         </div>
       </div>
       <div class="code-section">
@@ -1041,6 +1295,7 @@ resnet152 = models.<span class="fn">resnet152</span>(weights=<span class="st">'D
 <span class="cm"># Con Keras</span>
 <span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> ResNet50
 model = <span class="fn">ResNet50</span>(weights=<span class="st">'imagenet'</span>, include_top=<span class="nb">True</span>)</pre>
+      </div>
       </div>
       <div class="details-section">
         <button class="details-toggle" onclick="toggleDetails(this)">
@@ -1084,7 +1339,7 @@ model = <span class="fn">ResNet50</span>(weights=<span class="st">'imagenet'</sp
         </div>
         <span class="badge badge-cyan">Dense</span>
       </div>
-      <div class="diagram-section">
+      <div class="card-body-grid"><div class="diagram-section">
         <h3>// Bloque Denso (Dense Block)</h3>
         <div class="diagram-svg-wrap">
           <svg width="520" height="170" viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
@@ -1136,6 +1391,7 @@ densenet201 = models.<span class="fn">densenet201</span>(weights=<span class="st
 <span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> DenseNet121
 model = <span class="fn">DenseNet121</span>(weights=<span class="st">'imagenet'</span>)</pre>
       </div>
+      </div>
       <div class="details-section">
         <button class="details-toggle" onclick="toggleDetails(this)">
           <span class="toggle-label">▸ Detalles de la arquitectura</span>
@@ -1178,49 +1434,77 @@ model = <span class="fn">DenseNet121</span>(weights=<span class="st">'imagenet'<
         </div>
         <span class="badge badge-purple">Edge / Mobile</span>
       </div>
-      <div class="diagram-section">
-        <h3>// Depthwise Separable Convolution</h3>
+      <div class="card-body-grid"><div class="diagram-section">
+        <h3>// Depthwise Separable Conv — paso a paso vs Conv estándar</h3>
         <div class="diagram-svg-wrap">
-          <svg width="520" height="160" viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
-            <!-- Standard Conv -->
-            <text x="115" y="18" text-anchor="middle" fill="#505070" font-size="8">Conv Estándar</text>
-            <rect x="20" y="28" width="70" height="50" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
-            <text x="55" y="52" text-anchor="middle" fill="#6ee7f7" font-size="8">Input</text>
-            <text x="55" y="64" text-anchor="middle" fill="#7070a0" font-size="7">H×W×Cin</text>
-            <line x1="90" y1="53" x2="106" y2="53" stroke="#6ee7f7" stroke-width="1.5"/>
-            <polygon points="106,49 112,53 106,57" fill="#6ee7f7"/>
-            <rect x="112" y="28" width="70" height="50" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <text x="147" y="48" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Conv Dk×Dk</text>
-            <text x="147" y="62" text-anchor="middle" fill="#0a0a0f" font-size="7">Cin × Cout filtros</text>
-            <text x="147" y="72" text-anchor="middle" fill="#0a0a0f" font-size="7">Dk²×Cin×Cout MACs</text>
-            <line x1="182" y1="53" x2="198" y2="53" stroke="#6ee7f7" stroke-width="1.5"/>
-            <polygon points="198,49 204,53 198,57" fill="#6ee7f7"/>
-            <rect x="204" y="28" width="70" height="50" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.6"/>
-            <text x="239" y="52" text-anchor="middle" fill="#f7c86e" font-size="8">Output</text>
-            <text x="239" y="64" text-anchor="middle" fill="#7070a0" font-size="7">H×W×Cout</text>
-            <!-- Separator -->
-            <line x1="10" y1="90" x2="510" y2="90" stroke="#252535" stroke-width="1" stroke-dasharray="6,4"/>
-            <!-- Depthwise Separable -->
-            <text x="115" y="104" text-anchor="middle" fill="#505070" font-size="8">Depthwise Separable (MobileNet)</text>
-            <rect x="20" y="114" width="70" height="38" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
-            <text x="55" y="135" text-anchor="middle" fill="#6ee7f7" font-size="8">H×W×Cin</text>
-            <line x1="90" y1="133" x2="104" y2="133" stroke="#6ee7f7" stroke-width="1.5"/>
-            <polygon points="104,129 110,133 104,137" fill="#6ee7f7"/>
-            <rect x="110" y="114" width="80" height="38" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
-            <text x="150" y="130" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Depthwise</text>
-            <text x="150" y="143" text-anchor="middle" fill="#0a0a0f" font-size="7">Dk²×Cin MACs</text>
-            <line x1="190" y1="133" x2="204" y2="133" stroke="#b06ef7" stroke-width="1.5"/>
-            <polygon points="204,129 210,133 204,137" fill="#b06ef7"/>
-            <rect x="210" y="114" width="80" height="38" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
-            <text x="250" y="130" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Pointwise</text>
-            <text x="250" y="143" text-anchor="middle" fill="#0a0a0f" font-size="7">1×1 Conv, Cout MACs</text>
-            <line x1="290" y1="133" x2="304" y2="133" stroke="#6ee7f7" stroke-width="1.5"/>
-            <polygon points="304,129 310,133 304,137" fill="#6ee7f7"/>
-            <rect x="310" y="114" width="70" height="38" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.6"/>
-            <text x="345" y="135" text-anchor="middle" fill="#f7c86e" font-size="8">H×W×Cout</text>
-            <!-- Reduction label -->
-            <text x="430" y="130" text-anchor="middle" fill="#b06ef7" font-size="9" font-weight="bold">~8-9×</text>
-            <text x="430" y="143" text-anchor="middle" fill="#7070a0" font-size="7">reducción de costo</text>
+          <svg width="620" height="260" viewBox="0 0 620 260" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <text x="115" y="14" text-anchor="middle" fill="#505070" font-size="8">Conv Estándar (referencia)</text>
+            <text x="430" y="14" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">Depthwise Separable (MobileNet)</text>
+            <!-- ── ESTÁNDAR ── -->
+            <rect x="10" y="24" width="44" height="64" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
+            <line x1="18" y1="24" x2="18" y2="88" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="26" y1="24" x2="26" y2="88" stroke="#0a0a0f" stroke-width="1"/>
+            <text x="32" y="100" text-anchor="middle" fill="#6ee7f7" font-size="7">H×W×Cin</text>
+            <text x="112" y="21" text-anchor="middle" fill="#b06ef7" font-size="7">Cout filtros 3D (cada uno lee todos los canales)</text>
+            <rect x="64" y="38" width="22" height="22" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.9"/>
+            <text x="75" y="53" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">3×3×3</text>
+            <rect x="90" y="38" width="22" height="22" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.75"/>
+            <text x="101" y="53" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">3×3×3</text>
+            <text x="120" y="53" fill="#b06ef7" font-size="10">…</text>
+            <rect x="132" y="38" width="22" height="22" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.6"/>
+            <text x="143" y="53" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">3×3×3</text>
+            <text x="106" y="80" text-anchor="middle" fill="#b06ef7" font-size="7">costo: Dk²×Cin×Cout MACs</text>
+            <line x1="156" y1="56" x2="168" y2="56" stroke="#505070" stroke-width="1.5"/><polygon points="168,52 174,56 168,60" fill="#505070"/>
+            <rect x="174" y="36" width="44" height="64" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.7"/>
+            <line x1="182" y1="36" x2="182" y2="100" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="190" y1="36" x2="190" y2="100" stroke="#0a0a0f" stroke-width="1"/>
+            <text x="196" y="115" text-anchor="middle" fill="#f7c86e" font-size="7">H×W×Cout</text>
+            <rect x="10" y="138" width="208" height="20" rx="2" fill="rgba(176,110,247,0.08)" stroke="rgba(176,110,247,0.3)" stroke-width="1"/>
+            <text x="114" y="152" text-anchor="middle" fill="#b06ef7" font-size="8">Costo: Dk²×Cin×Cout</text>
+            <!-- ── PASO 1: Depthwise ── -->
+            <text x="320" y="21" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">PASO 1: Depthwise (1 filtro por canal)</text>
+            <rect x="258" y="24" width="44" height="64" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
+            <line x1="266" y1="24" x2="266" y2="88" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="274" y1="24" x2="274" y2="88" stroke="#0a0a0f" stroke-width="1"/>
+            <text x="280" y="100" text-anchor="middle" fill="#6ee7f7" font-size="7">H×W×Cin</text>
+            <rect x="314" y="34" width="16" height="14" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="322" y="45" text-anchor="middle" fill="#0a0a0f" font-size="6" font-weight="bold">3×3×1</text>
+            <rect x="334" y="34" width="16" height="14" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
+            <text x="342" y="45" text-anchor="middle" fill="#0a0a0f" font-size="6" font-weight="bold">3×3×1</text>
+            <rect x="354" y="34" width="16" height="14" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <text x="362" y="45" text-anchor="middle" fill="#0a0a0f" font-size="6" font-weight="bold">3×3×1</text>
+            <text x="342" y="62" text-anchor="middle" fill="#505070" font-size="7">cada filtro: 1 canal</text>
+            <text x="342" y="74" text-anchor="middle" fill="#6ee7f7" font-size="7">costo: Dk²×Cin</text>
+            <line x1="378" y1="56" x2="390" y2="56" stroke="#505070" stroke-width="1.5"/><polygon points="390,52 396,56 390,60" fill="#505070"/>
+            <rect x="396" y="24" width="44" height="64" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
+            <line x1="404" y1="24" x2="404" y2="88" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="412" y1="24" x2="412" y2="88" stroke="#0a0a0f" stroke-width="1"/>
+            <text x="418" y="100" text-anchor="middle" fill="#6ee7f7" font-size="7">H×W×Cin</text>
+            <!-- ── PASO 2: Pointwise ── -->
+            <text x="530" y="21" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">PASO 2: Pointwise 1×1</text>
+            <line x1="442" y1="56" x2="454" y2="56" stroke="#505070" stroke-width="1.5"/><polygon points="454,52 460,56 454,60" fill="#505070"/>
+            <rect x="460" y="34" width="26" height="44" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="473" y="54" text-anchor="middle" fill="#0a0a0f" font-size="7" font-weight="bold">1×1</text>
+            <text x="473" y="65" text-anchor="middle" fill="#0a0a0f" font-size="7">×Cout</text>
+            <text x="473" y="84" text-anchor="middle" fill="#b06ef7" font-size="7">mezcla canales</text>
+            <line x1="486" y1="56" x2="498" y2="56" stroke="#505070" stroke-width="1.5"/><polygon points="498,52 504,56 498,60" fill="#505070"/>
+            <rect x="504" y="36" width="44" height="64" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.7"/>
+            <line x1="512" y1="36" x2="512" y2="100" stroke="#0a0a0f" stroke-width="1"/>
+            <line x1="520" y1="36" x2="520" y2="100" stroke="#0a0a0f" stroke-width="1"/>
+            <text x="526" y="115" text-anchor="middle" fill="#f7c86e" font-size="7">H×W×Cout</text>
+            <rect x="258" y="138" width="290" height="20" rx="2" fill="rgba(110,231,247,0.07)" stroke="rgba(110,231,247,0.25)" stroke-width="1"/>
+            <text x="403" y="152" text-anchor="middle" fill="#6ee7f7" font-size="8">Costo total: Dk²×Cin + Cin×Cout   →  ~8-9× menos con Dk=3</text>
+            <!-- BAR COMPARISON -->
+            <text x="310" y="176" text-anchor="middle" fill="#505070" font-size="8">Relación: 1/Cout + 1/Dk²  (ej: Cout=256, Dk=3  →  0.004+0.11 = ~8.6× ahorro)</text>
+            <text x="100" y="196" text-anchor="middle" fill="#b06ef7" font-size="7.5">Conv estándar</text>
+            <rect x="10" y="200" width="220" height="12" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.7"/>
+            <text x="285" y="196" text-anchor="middle" fill="#6ee7f7" font-size="7.5">Depthwise Sep.</text>
+            <rect x="240" y="200" width="26" height="12" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="275" y="211" fill="#6ee7f7" font-size="7">~8-9× menos</text>
+            <!-- MobileNetV2 note -->
+            <rect x="10" y="220" width="600" height="36" rx="2" fill="rgba(247,200,110,0.05)" stroke="rgba(247,200,110,0.15)" stroke-width="1"/>
+            <text x="22" y="234" fill="#f7c86e" font-size="7.5" font-weight="bold">MobileNetV2 — Inverted Residual Block:</text>
+            <text x="22" y="247" fill="#7070a0" font-size="7">  Conv 1×1 expand (×6 canales)  →  Depthwise 3×3  →  Conv 1×1 reduce  +  skip connection (si dims iguales)</text>
           </svg>
         </div>
       </div>
@@ -1236,6 +1520,7 @@ mv3l = models.<span class="fn">mobilenet_v3_large</span>(weights=<span class="st
 <span class="cm"># Con Keras</span>
 <span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> MobileNetV2
 model = <span class="fn">MobileNetV2</span>(weights=<span class="st">'imagenet'</span>, input_shape=(<span class="st">224</span>,<span class="st">224</span>,<span class="st">3</span>))</pre>
+      </div>
       </div>
       <div class="details-section">
         <button class="details-toggle" onclick="toggleDetails(this)">
@@ -1279,45 +1564,153 @@ model = <span class="fn">MobileNetV2</span>(weights=<span class="st">'imagenet'<
         </div>
         <span class="badge badge-gold">Compound Scaling</span>
       </div>
-      <div class="diagram-section">
-        <h3>// Compound Scaling</h3>
+      <div class="card-body-grid"><div class="diagram-section">
+        <h3>// MBConv Block (bloque base) + Compound Scaling</h3>
         <div class="diagram-svg-wrap">
-          <svg width="520" height="170" viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
-            <!-- Baseline -->
-            <text x="260" y="16" text-anchor="middle" fill="#505070" font-size="8">Compound Scaling: escalar profundidad, anchura y resolución simultáneamente</text>
-            <!-- 4 boxes -->
-            <rect x="15" y="30" width="100" height="110" rx="3" fill="#12121a" stroke="#252535" stroke-width="1"/>
-            <text x="65" y="50" text-anchor="middle" fill="#7070a0" font-size="8">Baseline (B0)</text>
-            <rect x="25" y="58" width="80" height="24" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
-            <rect x="25" y="86" width="80" height="24" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.4"/>
-            <rect x="25" y="114" width="80" height="18" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.3"/>
-            <text x="65" y="148" text-anchor="middle" fill="#6ee7f7" font-size="8">224px · B0</text>
-            <!-- Width -->
-            <rect x="130" y="30" width="100" height="110" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
-            <text x="180" y="50" text-anchor="middle" fill="#b06ef7" font-size="8">+ Anchura</text>
-            <rect x="136" y="58" width="88" height="24" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.7"/>
-            <rect x="136" y="86" width="88" height="24" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.55"/>
-            <rect x="136" y="114" width="88" height="18" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.4"/>
-            <text x="180" y="148" text-anchor="middle" fill="#b06ef7" font-size="8">más canales</text>
-            <!-- Depth -->
-            <rect x="245" y="18" width="100" height="122" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
-            <text x="295" y="38" text-anchor="middle" fill="#f7c86e" font-size="8">+ Profundidad</text>
-            <rect x="253" y="46" width="84" height="18" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.7"/>
-            <rect x="253" y="68" width="84" height="18" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.65"/>
-            <rect x="253" y="90" width="84" height="18" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.6"/>
-            <rect x="253" y="112" width="84" height="18" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.55"/>
-            <text x="295" y="148" text-anchor="middle" fill="#f7c86e" font-size="8">más capas</text>
-            <!-- Compound -->
-            <rect x="360" y="8" width="148" height="134" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="2"/>
-            <text x="434" y="26" text-anchor="middle" fill="#6ee7f7" font-size="8.5" font-weight="bold">Compound (B7)</text>
-            <rect x="368" y="34" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
-            <rect x="368" y="54" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.75"/>
-            <rect x="368" y="74" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.7"/>
-            <rect x="368" y="94" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.65"/>
-            <rect x="368" y="114" width="132" height="16" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.6"/>
-            <text x="434" y="158" text-anchor="middle" fill="#6ee7f7" font-size="8">600px · B7</text>
-            <!-- Arrow -->
-            <text x="260" y="165" text-anchor="middle" fill="#505070" font-size="7">φ = coeficiente de escala · d = α^φ · w = β^φ · r = γ^φ  (α·β²·γ² ≈ 2)</text>
+          <svg width="640" height="310" viewBox="0 0 640 310" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+
+            <!-- ════ MBConv BLOCK ════ -->
+            <text x="175" y="14" text-anchor="middle" fill="#6ee7f7" font-size="8.5" font-weight="bold">MBConv Block (Inverted Residual + Squeeze-Excitation)</text>
+
+            <!-- Input -->
+            <rect x="115" y="22" width="120" height="22" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="175" y="37" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">x  (entrada, C canales)</text>
+
+            <!-- Conv 1x1 expand -->
+            <line x1="175" y1="44" x2="175" y2="58" stroke="#6ee7f7" stroke-width="1.5"/><polygon points="171,58 175,64 179,58" fill="#6ee7f7"/>
+            <rect x="115" y="64" width="120" height="22" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <text x="175" y="79" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Conv 1×1 expand → 6C + BN + Swish</text>
+
+            <!-- Depthwise -->
+            <line x1="175" y1="86" x2="175" y2="100" stroke="#b06ef7" stroke-width="1.5"/><polygon points="171,100 175,106 179,100" fill="#b06ef7"/>
+            <rect x="115" y="106" width="120" height="22" rx="2" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.85"/>
+            <text x="175" y="121" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Depthwise Conv 3×3 + BN + Swish</text>
+
+            <!-- SE block -->
+            <line x1="175" y1="128" x2="175" y2="142" stroke="#6ee7f7" stroke-width="1.5"/><polygon points="171,142 175,148 179,142" fill="#6ee7f7"/>
+            <rect x="115" y="148" width="120" height="32" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1.5"/>
+            <text x="175" y="161" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Squeeze-Excitation</text>
+            <text x="175" y="173" text-anchor="middle" fill="#0a0a0f" font-size="7">AvgPool→FC→ReLU→FC→Sigmoid</text>
+
+            <!-- Conv 1x1 project -->
+            <line x1="175" y1="180" x2="175" y2="194" stroke="#f7c86e" stroke-width="1.5"/><polygon points="171,194 175,200 179,194" fill="#f7c86e"/>
+            <rect x="115" y="200" width="120" height="22" rx="2" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.8"/>
+            <text x="175" y="215" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Conv 1×1 project → C + BN</text>
+
+            <!-- Skip -->
+            <line x1="175" y1="33" x2="270" y2="33" stroke="#f7c86e" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <line x1="270" y1="33" x2="270" y2="222" stroke="#f7c86e" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <line x1="270" y1="222" x2="248" y2="222" stroke="#f7c86e" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <circle cx="236" cy="222" r="10" fill="#1a1a26" stroke="#f7c86e" stroke-width="1.5"/>
+            <text x="236" y="227" text-anchor="middle" fill="#f7c86e" font-size="11" font-weight="bold">+</text>
+            <text x="280" y="30" fill="#f7c86e" font-size="7">skip (si stride=1)</text>
+            <line x1="236" y1="232" x2="236" y2="246" stroke="#6ee7f7" stroke-width="1.5"/><polygon points="232,246 236,252 240,246" fill="#6ee7f7"/>
+            <rect x="176" y="252" width="120" height="18" rx="2" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <text x="236" y="265" text-anchor="middle" fill="#0a0a0f" font-size="8" font-weight="bold">Salida (C canales)</text>
+
+            <!-- Swish note -->
+            <text x="175" y="283" text-anchor="middle" fill="#505070" font-size="7">Swish(x) = x·σ(x)  — activación más suave que ReLU, mejor en redes profundas</text>
+            <text x="175" y="293" text-anchor="middle" fill="#505070" font-size="7">SE calibra la importancia de cada canal: comprime→excita→reescala los feature maps</text>
+
+            <!-- ════ COMPOUND SCALING TABLE ════ -->
+            <text x="490" y="14" text-anchor="middle" fill="#f7c86e" font-size="8.5" font-weight="bold">Compound Scaling B0→B7</text>
+
+            <!-- Table header -->
+            <rect x="340" y="22" width="280" height="18" rx="1" fill="rgba(247,200,110,0.12)" stroke="rgba(247,200,110,0.3)" stroke-width="1"/>
+            <text x="370" y="34" text-anchor="middle" fill="#f7c86e" font-size="7" font-weight="bold">Modelo</text>
+            <text x="420" y="34" text-anchor="middle" fill="#f7c86e" font-size="7" font-weight="bold">Res.</text>
+            <text x="462" y="34" text-anchor="middle" fill="#f7c86e" font-size="7" font-weight="bold">Canales</text>
+            <text x="508" y="34" text-anchor="middle" fill="#f7c86e" font-size="7" font-weight="bold">Capas</text>
+            <text x="558" y="34" text-anchor="middle" fill="#f7c86e" font-size="7" font-weight="bold">Params</text>
+            <text x="598" y="34" text-anchor="middle" fill="#f7c86e" font-size="7" font-weight="bold">Top-1</text>
+
+            <!-- Rows -->
+            <rect x="340" y="40" width="280" height="16" rx="1" fill="rgba(110,231,247,0.05)"/>
+            <text x="370" y="51" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">B0</text>
+            <text x="420" y="51" text-anchor="middle" fill="#7070a0" font-size="7">224</text>
+            <text x="462" y="51" text-anchor="middle" fill="#7070a0" font-size="7">×1.0</text>
+            <text x="508" y="51" text-anchor="middle" fill="#7070a0" font-size="7">×1.0</text>
+            <text x="558" y="51" text-anchor="middle" fill="#7070a0" font-size="7">5.3M</text>
+            <text x="598" y="51" text-anchor="middle" fill="#6ee7f7" font-size="7">77.3%</text>
+
+            <rect x="340" y="56" width="280" height="16" rx="1"/>
+            <text x="370" y="67" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">B1</text>
+            <text x="420" y="67" text-anchor="middle" fill="#7070a0" font-size="7">240</text>
+            <text x="462" y="67" text-anchor="middle" fill="#7070a0" font-size="7">×1.0</text>
+            <text x="508" y="67" text-anchor="middle" fill="#7070a0" font-size="7">×1.1</text>
+            <text x="558" y="67" text-anchor="middle" fill="#7070a0" font-size="7">7.8M</text>
+            <text x="598" y="67" text-anchor="middle" fill="#6ee7f7" font-size="7">79.2%</text>
+
+            <rect x="340" y="72" width="280" height="16" rx="1" fill="rgba(110,231,247,0.05)"/>
+            <text x="370" y="83" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">B2</text>
+            <text x="420" y="83" text-anchor="middle" fill="#7070a0" font-size="7">260</text>
+            <text x="462" y="83" text-anchor="middle" fill="#7070a0" font-size="7">×1.1</text>
+            <text x="508" y="83" text-anchor="middle" fill="#7070a0" font-size="7">×1.2</text>
+            <text x="558" y="83" text-anchor="middle" fill="#7070a0" font-size="7">9.2M</text>
+            <text x="598" y="83" text-anchor="middle" fill="#6ee7f7" font-size="7">80.3%</text>
+
+            <rect x="340" y="88" width="280" height="16" rx="1"/>
+            <text x="370" y="99" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">B3</text>
+            <text x="420" y="99" text-anchor="middle" fill="#7070a0" font-size="7">300</text>
+            <text x="462" y="99" text-anchor="middle" fill="#7070a0" font-size="7">×1.2</text>
+            <text x="508" y="99" text-anchor="middle" fill="#7070a0" font-size="7">×1.4</text>
+            <text x="558" y="99" text-anchor="middle" fill="#7070a0" font-size="7">12M</text>
+            <text x="598" y="99" text-anchor="middle" fill="#6ee7f7" font-size="7">81.7%</text>
+
+            <rect x="340" y="104" width="280" height="16" rx="1" fill="rgba(110,231,247,0.05)"/>
+            <text x="370" y="115" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">B4</text>
+            <text x="420" y="115" text-anchor="middle" fill="#7070a0" font-size="7">380</text>
+            <text x="462" y="115" text-anchor="middle" fill="#7070a0" font-size="7">×1.4</text>
+            <text x="508" y="115" text-anchor="middle" fill="#7070a0" font-size="7">×1.8</text>
+            <text x="558" y="115" text-anchor="middle" fill="#7070a0" font-size="7">19M</text>
+            <text x="598" y="115" text-anchor="middle" fill="#6ee7f7" font-size="7">83.0%</text>
+
+            <rect x="340" y="120" width="280" height="16" rx="1"/>
+            <text x="370" y="131" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">B5</text>
+            <text x="420" y="131" text-anchor="middle" fill="#7070a0" font-size="7">456</text>
+            <text x="462" y="131" text-anchor="middle" fill="#7070a0" font-size="7">×1.6</text>
+            <text x="508" y="131" text-anchor="middle" fill="#7070a0" font-size="7">×2.2</text>
+            <text x="558" y="131" text-anchor="middle" fill="#7070a0" font-size="7">30M</text>
+            <text x="598" y="131" text-anchor="middle" fill="#6ee7f7" font-size="7">83.7%</text>
+
+            <rect x="340" y="136" width="280" height="16" rx="1" fill="rgba(110,231,247,0.05)"/>
+            <text x="370" y="147" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">B6</text>
+            <text x="420" y="147" text-anchor="middle" fill="#7070a0" font-size="7">528</text>
+            <text x="462" y="147" text-anchor="middle" fill="#7070a0" font-size="7">×1.8</text>
+            <text x="508" y="147" text-anchor="middle" fill="#7070a0" font-size="7">×2.6</text>
+            <text x="558" y="147" text-anchor="middle" fill="#7070a0" font-size="7">43M</text>
+            <text x="598" y="147" text-anchor="middle" fill="#6ee7f7" font-size="7">84.0%</text>
+
+            <rect x="340" y="152" width="280" height="18" rx="1" fill="rgba(110,231,247,0.1)" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="370" y="165" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">B7</text>
+            <text x="420" y="165" text-anchor="middle" fill="#e8e8f0" font-size="7">600</text>
+            <text x="462" y="165" text-anchor="middle" fill="#e8e8f0" font-size="7">×2.0</text>
+            <text x="508" y="165" text-anchor="middle" fill="#e8e8f0" font-size="7">×3.1</text>
+            <text x="558" y="165" text-anchor="middle" fill="#e8e8f0" font-size="7">66M</text>
+            <text x="598" y="165" text-anchor="middle" fill="#f7c86e" font-size="7.5" font-weight="bold">84.3%</text>
+
+            <!-- Formula -->
+            <rect x="340" y="178" width="280" height="36" rx="2" fill="rgba(247,200,110,0.06)" stroke="rgba(247,200,110,0.2)" stroke-width="1"/>
+            <text x="480" y="193" text-anchor="middle" fill="#f7c86e" font-size="8" font-weight="bold">Fórmula Compound Scaling:</text>
+            <text x="480" y="207" text-anchor="middle" fill="#7070a0" font-size="7.5">d=α^φ · w=β^φ · r=γ^φ    con α·β²·γ²≈2</text>
+
+            <!-- Compound visual -->
+            <text x="480" y="230" text-anchor="middle" fill="#505070" font-size="7.5">φ escala las 3 dimensiones a la vez en lugar de</text>
+            <text x="480" y="242" text-anchor="middle" fill="#505070" font-size="7.5">escalar solo una (como se hacía antes):</text>
+            <!-- 3 bars: depth, width, resolution -->
+            <text x="360" y="258" text-anchor="middle" fill="#f7c86e" font-size="7">Profundidad</text>
+            <rect x="340" y="262" width="40" height="10" rx="1" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1" opacity="0.8"/>
+            <text x="430" y="258" text-anchor="middle" fill="#b06ef7" font-size="7">Anchura</text>
+            <rect x="410" y="262" width="40" height="10" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1" opacity="0.8"/>
+            <text x="510" y="258" text-anchor="middle" fill="#6ee7f7" font-size="7">Resolución</text>
+            <rect x="490" y="262" width="40" height="10" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1" opacity="0.8"/>
+            <text x="600" y="258" text-anchor="middle" fill="#e8e8f0" font-size="7">B7: todas ×</text>
+            <rect x="570" y="262" width="60" height="10" rx="1" fill="#252535" stroke="#e8e8f0" stroke-width="1"/>
+            <rect x="340" y="278" width="40" height="24" rx="1" fill="url(#gGold)" stroke="#f7c86e" stroke-width="1"/>
+            <rect x="410" y="278" width="40" height="24" rx="1" fill="url(#gPurp)" stroke="#b06ef7" stroke-width="1"/>
+            <rect x="490" y="278" width="40" height="24" rx="1" fill="url(#gCyan)" stroke="#6ee7f7" stroke-width="1"/>
+            <rect x="570" y="274" width="60" height="30" rx="1" fill="rgba(110,231,247,0.15)" stroke="#6ee7f7" stroke-width="1.5"/>
+            <text x="600" y="293" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">todas juntas</text>
           </svg>
         </div>
       </div>
@@ -1337,6 +1730,7 @@ model = <span class="fn">EfficientNetB0</span>(weights=<span class="st">'imagene
 <span class="cm"># EfficientNetV2 (más nuevo, más rápido)</span>
 <span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> EfficientNetV2S
 model_v2 = <span class="fn">EfficientNetV2S</span>(weights=<span class="st">'imagenet'</span>)</pre>
+      </div>
       </div>
       <div class="details-section">
         <button class="details-toggle" onclick="toggleDetails(this)">
@@ -1380,7 +1774,7 @@ model_v2 = <span class="fn">EfficientNetV2S</span>(weights=<span class="st">'ima
         </div>
         <span class="badge badge-purple">Transformer</span>
       </div>
-      <div class="diagram-section">
+      <div class="card-body-grid"><div class="diagram-section">
         <h3>// Arquitectura ViT</h3>
         <div class="diagram-svg-wrap">
           <svg width="580" height="175" viewBox="0 0 580 175" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
@@ -1466,6 +1860,7 @@ model = ViTForImageClassification.<span class="fn">from_pretrained</span>(
 <span class="cm"># Con Keras / TF</span>
 <span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> EfficientNetV2L <span class="cm"># o usar keras-cv</span></pre>
       </div>
+      </div>
       <div class="details-section">
         <button class="details-toggle" onclick="toggleDetails(this)">
           <span class="toggle-label">▸ Detalles de la arquitectura</span>
@@ -1498,19 +1893,30 @@ model = ViTForImageClassification.<span class="fn">from_pretrained</span>(
   </div>
 
 </div><!-- /panels -->
+  </div><!-- /content-area -->
+</div><!-- /app-shell -->
 
 <script>
-  // Tab switching
-  document.getElementById('tabs').addEventListener('click', function(e) {
+  function activateTab(tab) {
+    // Sync both sidebar and mobile tabs
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === tab);
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  // Clicks on either sidebar or mobile nav
+  document.addEventListener('click', function(e) {
     const btn = e.target.closest('.tab-btn');
     if (!btn) return;
     const tab = btn.dataset.tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel-' + tab).classList.add('active');
-    // Scroll tab into view
-    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    activateTab(tab);
+    // Scroll active button into view in mobile bar
+    const mobileBtns = document.querySelectorAll('#tabs-mobile .tab-btn');
+    mobileBtns.forEach(b => {
+      if (b.dataset.tab === tab) b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    });
   });
 
   // Accordion
@@ -1524,13 +1930,16 @@ model = ViTForImageClassification.<span class="fn">from_pretrained</span>(
 
   // Keyboard navigation
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      const btns = Array.from(document.querySelectorAll('.tab-btn'));
-      const activeIdx = btns.findIndex(b => b.classList.contains('active'));
-      const next = e.key === 'ArrowRight'
-        ? btns[Math.min(activeIdx + 1, btns.length - 1)]
-        : btns[Math.max(activeIdx - 1, 0)];
-      next.click();
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const tabs = ['lenet','alexnet','vgg','inception','resnet','densenet','mobilenet','efficientnet','vit'];
+      const activePanel = document.querySelector('.panel.active');
+      if (!activePanel) return;
+      const cur = activePanel.id.replace('panel-', '');
+      const idx = tabs.indexOf(cur);
+      const next = (e.key === 'ArrowRight' || e.key === 'ArrowDown')
+        ? tabs[Math.min(idx + 1, tabs.length - 1)]
+        : tabs[Math.max(idx - 1, 0)];
+      activateTab(next);
     }
   });
 </script>
