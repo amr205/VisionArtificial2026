@@ -643,7 +643,7 @@
     <p class="header-sub">Explorer interactivo · PyTorch · Visualización</p>
   </div>
   <div class="header-meta">
-    <span class="badge badge-cyan">5 Parámetros</span>
+    <span class="badge badge-cyan">7 Parámetros</span>
     <span class="badge badge-gold">Interactivo</span>
     <span class="badge badge-purple">PyTorch</span>
   </div>
@@ -659,6 +659,7 @@
       <button class="tab-btn" data-tab="padding"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⬜</div><div class="tab-name">Padding</div></div></button>
       <button class="tab-btn" data-tab="stride"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">→</div><div class="tab-name">Stride</div></div></button>
       <button class="tab-btn" data-tab="dilation"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⟺</div><div class="tab-name">Dilatación</div></div></button>
+      <button class="tab-btn" data-tab="canales"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⊞</div><div class="tab-name">Canales</div></div></button>
     </div>
   </div>
   <div class="scroll-hint">← scroll →</div>
@@ -675,6 +676,7 @@
         <button class="tab-btn" data-tab="padding"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⬜ padding</div><div class="tab-name">Relleno</div></div></button>
         <button class="tab-btn" data-tab="stride"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">→ stride</div><div class="tab-name">Paso</div></div></button>
         <button class="tab-btn" data-tab="dilation"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⟺ dilation</div><div class="tab-name">Dilatación</div></div></button>
+        <button class="tab-btn" data-tab="canales"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⊞ channels</div><div class="tab-name">Canales E/S</div></div></button>
       </div>
     </div>
   </nav>
@@ -747,13 +749,29 @@
               <input type="range" id="sl-d" min="1" max="4" step="1" value="1">
               <div class="ctrl-hint">Espacio entre elementos del kernel</div>
             </div>
+            <div class="ctrl-card" style="border-color:rgba(176,110,247,0.35)">
+              <div class="ctrl-top">
+                <span class="ctrl-label" style="color:var(--accent3)">in_channels (Cin)</span>
+                <span class="ctrl-val" id="val-Cin" style="color:var(--accent3)">3</span>
+              </div>
+              <input type="range" id="sl-Cin" min="1" max="16" step="1" value="3" style="accent-color:#b06ef7">
+              <div class="ctrl-hint">Canales del tensor de entrada</div>
+            </div>
+            <div class="ctrl-card" style="border-color:rgba(247,200,110,0.35)">
+              <div class="ctrl-top">
+                <span class="ctrl-label" style="color:var(--accent2)">out_channels (Cout)</span>
+                <span class="ctrl-val" id="val-Cout" style="color:var(--accent2)">8</span>
+              </div>
+              <input type="range" id="sl-Cout" min="1" max="32" step="1" value="8" style="accent-color:#f7c86e">
+              <div class="ctrl-hint">Número de filtros (mapas de salida)</div>
+            </div>
           </div>
 
           <div id="invalid-msg" class="invalid-msg" style="display:none"></div>
 
-          <div class="vis-row">
+          <div class="vis-row" id="vis-row-main">
             <div class="vis-card">
-              <h4>// Entrada (con padding)</h4>
+              <h4>// Tensor entrada (Cin × H × H)</h4>
               <canvas id="cv-in" width="160" height="160"></canvas>
             </div>
             <div class="vis-card">
@@ -761,8 +779,20 @@
               <canvas id="cv-pos" width="160" height="160"></canvas>
             </div>
             <div class="vis-card">
-              <h4>// Mapa de salida</h4>
+              <h4>// Mapa de salida (un canal)</h4>
               <canvas id="cv-out" width="160" height="160"></canvas>
+            </div>
+          </div>
+
+          <!-- Tensor 3D view + weight stats -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem;">
+            <div class="vis-card" style="display:flex;flex-direction:column;gap:0.6rem;">
+              <h4>// Tensor 3D — forma del volumen</h4>
+              <canvas id="cv-tensor" width="300" height="130" style="width:100%;height:auto;"></canvas>
+            </div>
+            <div class="vis-card" style="display:flex;flex-direction:column;gap:0.6rem;">
+              <h4>// Parámetros del peso</h4>
+              <div id="weight-stats" style="display:flex;flex-direction:column;gap:0.5rem;font-family:var(--mono);font-size:0.72rem;"></div>
             </div>
           </div>
 
@@ -781,10 +811,12 @@
           </button>
           <div class="details-body">
             <div class="detail-grid">
-              <div><div class="detail-label">Fórmula general</div><div class="detail-val">⌊(H + 2p − d(k−1) − 1) / s⌋ + 1</div></div>
+              <div><div class="detail-label">Fórmula espacial</div><div class="detail-val">⌊(H + 2p − d(k−1) − 1) / s⌋ + 1</div></div>
               <div><div class="detail-label">Kernel efectivo</div><div class="detail-val">k_eff = d × (k − 1) + 1</div></div>
               <div><div class="detail-label">Padding "same" (s=1, d=1)</div><div class="detail-val">p = (k − 1) / 2 → salida = entrada</div></div>
-              <div><div class="detail-label">Clase PyTorch</div><div class="detail-val">torch.nn.Conv2d</div></div>
+              <div><div class="detail-label">Parámetros del peso</div><div class="detail-val">Cout × Cin × k × k (+ Cout bias)</div></div>
+              <div><div class="detail-label">Forma tensor entrada</div><div class="detail-val">(N, Cin, H, W)</div></div>
+              <div><div class="detail-label">Forma tensor salida</div><div class="detail-val">(N, Cout, H_out, W_out)</div></div>
             </div>
             <div class="tag-list">
               <span class="tag highlight">kernel_size</span>
@@ -1409,13 +1441,175 @@ aspp = nn.<span class="fn">ModuleList</span>([
       </div>
     </div><!-- /panel-dilation -->
 
+    <!-- ══════════════════════════════════════ CANALES ══ -->
+    <div class="panel" id="panel-canales">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="arch-year">// Parámetros 5 y 6</div>
+            <div class="arch-name">in_channels · out_channels</div>
+            <div class="arch-sub">La tercera dimensión del tensor: profundidad y número de filtros</div>
+          </div>
+          <span class="badge badge-purple">Tensor 3D</span>
+        </div>
+        <div class="card-body-grid">
+          <div class="diagram-section">
+            <h3>// Cómo los canales transforman el tensor</h3>
+            <div class="diagram-svg-wrap">
+              <svg width="540" height="290" viewBox="0 0 540 290" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+                <defs>
+                  <linearGradient id="gCh1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#6ee7f7;stop-opacity:0.5"/>
+                    <stop offset="100%" style="stop-color:#6ee7f7;stop-opacity:0.2"/>
+                  </linearGradient>
+                  <linearGradient id="gCh2" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#b06ef7;stop-opacity:0.5"/>
+                    <stop offset="100%" style="stop-color:#b06ef7;stop-opacity:0.2"/>
+                  </linearGradient>
+                  <linearGradient id="gCh3" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#f7c86e;stop-opacity:0.5"/>
+                    <stop offset="100%" style="stop-color:#f7c86e;stop-opacity:0.2"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- INPUT TENSOR (Cin=3, isometric stack) -->
+                <text x="60" y="14" text-anchor="middle" fill="#6ee7f7" font-size="8.5" font-weight="bold">Tensor entrada</text>
+                <text x="60" y="26" text-anchor="middle" fill="#505070" font-size="7">(Cin=3, H, W)</text>
+
+                <!-- 3 channel slabs (isometric) -->
+                <!-- Channel 3 (back) -->
+                <rect x="20" y="50" width="70" height="70" rx="2" fill="url(#gCh1)" stroke="#6ee7f7" stroke-width="1" opacity="0.5"/>
+                <text x="55" y="90" text-anchor="middle" fill="#6ee7f7" font-size="7">canal 3</text>
+                <!-- Channel 2 -->
+                <rect x="28" y="42" width="70" height="70" rx="2" fill="url(#gCh1)" stroke="#6ee7f7" stroke-width="1" opacity="0.7"/>
+                <text x="63" y="82" text-anchor="middle" fill="#6ee7f7" font-size="7">canal 2</text>
+                <!-- Channel 1 (front) -->
+                <rect x="36" y="34" width="70" height="70" rx="2" fill="url(#gCh1)" stroke="#6ee7f7" stroke-width="1.5"/>
+                <text x="71" y="74" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">canal 1</text>
+                <!-- depth label -->
+                <line x1="20" y1="50" x2="36" y2="34" stroke="#6ee7f7" stroke-width="0.8" stroke-dasharray="3,2"/>
+                <line x1="90" y1="50" x2="106" y2="34" stroke="#6ee7f7" stroke-width="0.8" stroke-dasharray="3,2"/>
+                <line x1="20" y1="120" x2="36" y2="104" stroke="#6ee7f7" stroke-width="0.8" stroke-dasharray="3,2"/>
+                <text x="15" y="88" text-anchor="middle" fill="#6ee7f7" font-size="7" transform="rotate(-20,15,88)">Cin</text>
+
+                <!-- KERNEL TENSOR (Cout × Cin × k × k) -->
+                <text x="230" y="14" text-anchor="middle" fill="#b06ef7" font-size="8.5" font-weight="bold">Filtros (pesos)</text>
+                <text x="230" y="26" text-anchor="middle" fill="#505070" font-size="7">(Cout=8, Cin=3, k, k)</text>
+
+                <!-- Show 4 filter sets stacked with offset -->
+                <rect x="162" y="75" width="36" height="36" rx="2" fill="url(#gCh2)" stroke="#b06ef7" stroke-width="0.8" opacity="0.35"/>
+                <rect x="170" y="67" width="36" height="36" rx="2" fill="url(#gCh2)" stroke="#b06ef7" stroke-width="0.8" opacity="0.5"/>
+                <rect x="178" y="59" width="36" height="36" rx="2" fill="url(#gCh2)" stroke="#b06ef7" stroke-width="0.8" opacity="0.65"/>
+                <rect x="186" y="51" width="36" height="36" rx="2" fill="url(#gCh2)" stroke="#b06ef7" stroke-width="1"/>
+                <text x="204" y="73" text-anchor="middle" fill="#b06ef7" font-size="6.5" font-weight="bold">×8 filtros</text>
+                <!-- Each filter has Cin planes -->
+                <rect x="230" y="75" width="36" height="36" rx="2" fill="rgba(110,231,247,0.15)" stroke="#6ee7f7" stroke-width="0.8" opacity="0.5"/>
+                <rect x="238" y="67" width="36" height="36" rx="2" fill="rgba(110,231,247,0.15)" stroke="#6ee7f7" stroke-width="0.8" opacity="0.65"/>
+                <rect x="246" y="59" width="36" height="36" rx="2" fill="rgba(110,231,247,0.15)" stroke="#6ee7f7" stroke-width="1"/>
+                <text x="264" y="79" text-anchor="middle" fill="#6ee7f7" font-size="6.5">×3 planos</text>
+                <text x="235" y="46" text-anchor="middle" fill="#505070" font-size="6.5">(Cin)</text>
+
+                <!-- multiplication label -->
+                <text x="155" y="95" text-anchor="middle" fill="#505070" font-size="12">×</text>
+                <text x="295" y="95" text-anchor="middle" fill="#505070" font-size="12">=</text>
+
+                <!-- OUTPUT TENSOR (Cout planes) -->
+                <text x="420" y="14" text-anchor="middle" fill="#f7c86e" font-size="8.5" font-weight="bold">Tensor salida</text>
+                <text x="420" y="26" text-anchor="middle" fill="#505070" font-size="7">(Cout=8, H_out, W_out)</text>
+
+                <rect x="360" y="80" width="60" height="60" rx="2" fill="url(#gCh3)" stroke="#f7c86e" stroke-width="0.7" opacity="0.3"/>
+                <rect x="366" y="74" width="60" height="60" rx="2" fill="url(#gCh3)" stroke="#f7c86e" stroke-width="0.7" opacity="0.4"/>
+                <rect x="372" y="68" width="60" height="60" rx="2" fill="url(#gCh3)" stroke="#f7c86e" stroke-width="0.7" opacity="0.5"/>
+                <rect x="378" y="62" width="60" height="60" rx="2" fill="url(#gCh3)" stroke="#f7c86e" stroke-width="0.7" opacity="0.6"/>
+                <rect x="384" y="56" width="60" height="60" rx="2" fill="url(#gCh3)" stroke="#f7c86e" stroke-width="0.7" opacity="0.7"/>
+                <rect x="390" y="50" width="60" height="60" rx="2" fill="url(#gCh3)" stroke="#f7c86e" stroke-width="0.7" opacity="0.8"/>
+                <rect x="396" y="44" width="60" height="60" rx="2" fill="url(#gCh3)" stroke="#f7c86e" stroke-width="0.7" opacity="0.9"/>
+                <rect x="402" y="38" width="60" height="60" rx="2" fill="url(#gCh3)" stroke="#f7c86e" stroke-width="1.5"/>
+                <text x="432" y="72" text-anchor="middle" fill="#f7c86e" font-size="7" font-weight="bold">8 mapas</text>
+                <text x="432" y="83" text-anchor="middle" fill="#f7c86e" font-size="7">H_out × W_out</text>
+                <line x1="360" y1="80" x2="402" y2="38" stroke="#f7c86e" stroke-width="0.8" stroke-dasharray="3,2"/>
+                <text x="348" y="62" text-anchor="middle" fill="#f7c86e" font-size="7" transform="rotate(-20,348,62)">Cout</text>
+
+                <!-- WEIGHT COUNT BOX -->
+                <rect x="10" y="160" width="520" height="60" rx="3" fill="rgba(176,110,247,0.06)" stroke="rgba(176,110,247,0.25)" stroke-width="1"/>
+                <text x="270" y="180" text-anchor="middle" fill="#b06ef7" font-size="9" font-weight="bold">Parámetros del tensor de pesos = Cout × Cin × k × k   (+   Cout bias)</text>
+                <text x="270" y="196" text-anchor="middle" fill="#505070" font-size="8">Ejemplo: Cout=8, Cin=3, k=3  →  8 × 3 × 3 × 3 = 216 pesos  +  8 bias  =  224 parámetros</text>
+                <text x="270" y="210" text-anchor="middle" fill="#505070" font-size="8">Forma del tensor de pesos: weight.shape = (Cout, Cin, k, k)  →  (8, 3, 3, 3)</text>
+
+                <!-- PER-OUTPUT-CHANNEL explanation -->
+                <rect x="10" y="232" width="520" height="50" rx="3" fill="rgba(110,231,247,0.04)" stroke="rgba(110,231,247,0.15)" stroke-width="1"/>
+                <text x="270" y="250" text-anchor="middle" fill="#6ee7f7" font-size="8.5" font-weight="bold">Cada filtro de salida ve TODOS los canales de entrada simultáneamente</text>
+                <text x="270" y="264" text-anchor="middle" fill="#505070" font-size="8">El filtro j-ésimo tiene forma (Cin, k, k) · se desliza sobre el tensor (Cin, H, W) · produce 1 mapa H_out×W_out</text>
+                <text x="270" y="276" text-anchor="middle" fill="#505070" font-size="8">Los Cout filtros trabajan en paralelo e independientemente → producen Cout mapas de activación</text>
+              </svg>
+            </div>
+          </div>
+          <div class="code-section">
+            <h3>// Python · in_channels y out_channels</h3>
+            <pre><span class="cm"># Imagen RGB: 3 canales de entrada</span>
+conv1 = nn.<span class="fn">Conv2d</span>(
+    in_channels=<span class="st">3</span>,   <span class="cm"># R, G, B</span>
+    out_channels=<span class="st">64</span>,  <span class="cm"># 64 filtros aprendibles</span>
+    kernel_size=<span class="st">3</span>,
+    padding=<span class="st">1</span>
+)
+<span class="cm"># x: (N, 3, H, W)  →  y: (N, 64, H, W)</span>
+<span class="cm"># weight.shape = (64, 3, 3, 3)</span>
+<span class="cm"># bias.shape   = (64,)</span>
+<span class="cm"># total params = 64×3×3×3 + 64 = 1792</span>
+
+<span class="cm"># Bloque típico: duplicar canales al bajar resolución</span>
+conv2 = nn.<span class="fn">Conv2d</span>(<span class="st">64</span>, <span class="st">128</span>, <span class="st">3</span>, stride=<span class="st">2</span>, padding=<span class="st">1</span>)
+conv3 = nn.<span class="fn">Conv2d</span>(<span class="st">128</span>, <span class="st">256</span>, <span class="st">3</span>, stride=<span class="st">2</span>, padding=<span class="st">1</span>)
+
+<span class="cm"># Contar parámetros manualmente</span>
+<span class="kw">def</span> <span class="fn">conv_params</span>(Cin, Cout, k, bias=<span class="nb">True</span>):
+    w = Cout * Cin * k * k
+    b = Cout <span class="kw">if</span> bias <span class="kw">else</span> <span class="st">0</span>
+    <span class="kw">return</span> w + b
+
+<span class="nb">print</span>(<span class="fn">conv_params</span>(<span class="st">3</span>, <span class="st">64</span>, <span class="st">3</span>))  <span class="cm"># → 1792</span>
+<span class="nb">print</span>(<span class="fn">conv_params</span>(<span class="st">64</span>, <span class="st">128</span>, <span class="st">3</span>)) <span class="cm"># → 73856</span></pre>
+          </div>
+        </div>
+        <div class="details-section">
+          <button class="details-toggle" onclick="toggleDetails(this)">
+            <span class="toggle-label">▸ Detalles del parámetro</span>
+            <span class="arrow">›</span>
+          </button>
+          <div class="details-body">
+            <div class="detail-grid">
+              <div><div class="detail-label">Forma peso (W)</div><div class="detail-val">(Cout, Cin, k, k)</div></div>
+              <div><div class="detail-label">Forma bias (b)</div><div class="detail-val">(Cout,)</div></div>
+              <div><div class="detail-label">Parámetros totales</div><div class="detail-val">Cout × Cin × k² + Cout</div></div>
+              <div><div class="detail-label">Forma entrada</div><div class="detail-val">(N, Cin, H, W)</div></div>
+              <div><div class="detail-label">Forma salida</div><div class="detail-val">(N, Cout, H_out, W_out)</div></div>
+              <div><div class="detail-label">Cada filtro de salida</div><div class="detail-val">Lee todos los Cin canales</div></div>
+            </div>
+            <div class="tag-list">
+              <span class="tag highlight">Tensor 4D</span>
+              <span class="tag highlight">in_channels</span>
+              <span class="tag highlight">out_channels</span>
+              <span class="tag">Feature maps</span>
+              <span class="tag">RGB = Cin=3</span>
+              <span class="tag">Profundidad</span>
+            </div>
+            <div class="novelty-box">
+              <strong>Intuición de los canales:</strong><br>
+              La entrada a una convolución es siempre un <em>volumen 3D</em> (Cin × H × W), no una imagen 2D. Cada filtro es también un volumen (Cin × k × k) que se desliza espacialmente y produce <em>un solo mapa 2D</em>. Si quieres Cout mapas distintos, necesitas Cout filtros distintos. Por eso el tensor de pesos tiene 4 dimensiones: <code>(Cout, Cin, k, k)</code>. La primera capa de una red toma imágenes RGB con Cin=3; las capas intermedias pueden tener Cin=64, 128, 256, etc.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /panel-canales -->
+
   </div>
   </div><!-- /content-area -->
 </div><!-- /app-shell -->
 
 <script>
 /* ── INTERACTIVE EXPLORER ── */
-let params = { H:7, k:3, p:0, s:1, d:1 };
+let params = { H:7, k:3, p:0, s:1, d:1, Cin:3, Cout:8 };
 let currentStep = 0;
 
 function outSize(H,k,p,s,d) {
@@ -1424,7 +1618,7 @@ function outSize(H,k,p,s,d) {
 }
 
 function render() {
-  const {H,k,p,s,d} = params;
+  const {H,k,p,s,d,Cin,Cout} = params;
   const out = outSize(H,k,p,s,d);
   const ke = d*(k-1)+1;
   const inv = out<=0;
@@ -1434,6 +1628,8 @@ function render() {
   document.getElementById('val-p').textContent=p;
   document.getElementById('val-s').textContent=s;
   document.getElementById('val-d').textContent=d;
+  document.getElementById('val-Cin').textContent=Cin;
+  document.getElementById('val-Cout').textContent=Cout;
 
   const ft = document.getElementById('formula-txt');
   ft.innerHTML = `<span class="dim">out =</span> <span class="hl">⌊(${H} + 2×${p} − ${ke-1} − 1) / ${s}⌋ + 1${inv?'':'  =  '+out}</span>`;
@@ -1449,6 +1645,11 @@ function render() {
     b2.className='res-badge warn';
     b2.textContent=`k_eff: ${ke}×${ke}`;
     ba.appendChild(b2);
+    const b3=document.createElement('span');
+    b3.className='res-badge';
+    b3.style.cssText='background:rgba(176,110,247,0.1);color:#b06ef7;border-color:rgba(176,110,247,0.3)';
+    b3.textContent=`params: ${(Cout*Cin*k*k+Cout).toLocaleString()}`;
+    ba.appendChild(b3);
   }
 
   const im=document.getElementById('invalid-msg');
@@ -1461,6 +1662,8 @@ function render() {
     drawInput(out);
     drawPositions(out);
     drawOutput(out);
+    drawTensor3D(out);
+    updateWeightStats(out, ke, inv);
   }
   updateCode(out, ke, inv);
 }
@@ -1575,30 +1778,130 @@ function drawOutput(out){
 }
 
 function updateCode(out, ke, inv){
-  const {H,k,p,s,d}=params;
-  const dStr=d>1?`, dilation=<span class="st">${d}</span>`:'';
-  const pStr=p>0?`, padding=<span class="st">${p}</span>`:'';
-  const sStr=s>1?`, stride=<span class="st">${s}</span>`:'';
+  const {H,k,p,s,d,Cin,Cout}=params;
+  const dStr=d>1?`,\n    dilation=<span class="st">${d}</span>`:'';
+  const pStr=p>0?`,\n    padding=<span class="st">${p}</span>`:'';
+  const sStr=s>1?`,\n    stride=<span class="st">${s}</span>`:'';
+  const wParams=Cout*Cin*k*k;
+  const totalParams=wParams+Cout;
   document.getElementById('code-live').innerHTML=
 `<span class="cm"># PyTorch — parámetros actuales</span>
 <span class="kw">import</span> torch
 <span class="kw">import</span> torch.nn <span class="kw">as</span> nn
 
 conv = nn.<span class="fn">Conv2d</span>(
-    in_channels=<span class="st">1</span>,
-    out_channels=<span class="st">1</span>,
+    in_channels=<span class="st">${Cin}</span>,
+    out_channels=<span class="st">${Cout}</span>,
     kernel_size=<span class="st">${k}</span>${sStr}${pStr}${dStr}
 )
 
-x = torch.<span class="fn">randn</span>(<span class="st">1</span>, <span class="st">1</span>, <span class="st">${H}</span>, <span class="st">${H}</span>)  <span class="cm"># (N, C, H, W)</span>
-y = conv(x)
-<span class="cm"># y.shape → (1, 1, ${inv?'?':out}, ${inv?'?':out})</span>
+<span class="cm"># Tensor de pesos: (Cout, Cin, k, k)</span>
+<span class="cm"># conv.weight.shape = (${Cout}, ${Cin}, ${k}, ${k})</span>
+<span class="cm"># conv.bias.shape   = (${Cout},)</span>
+<span class="cm"># Parámetros totales = ${Cout}×${Cin}×${k}×${k} + ${Cout} = ${totalParams.toLocaleString()}</span>
 
-<span class="cm"># Fórmula: ⌊(H + 2p − d(k−1) − 1) / s⌋ + 1</span>
+x = torch.<span class="fn">randn</span>(<span class="st">1</span>, <span class="st">${Cin}</span>, <span class="st">${H}</span>, <span class="st">${H}</span>)  <span class="cm"># (N, Cin, H, W)</span>
+y = conv(x)
+<span class="cm"># y.shape → (1, ${Cout}, ${inv?'?':out}, ${inv?'?':out})  (N, Cout, H_out, W_out)</span>
+
+<span class="cm"># Fórmula espacial: ⌊(H + 2p − d(k−1) − 1) / s⌋ + 1</span>
 <span class="cm"># ⌊(${H} + ${2*p} − ${ke-1} − 1) / ${s}⌋ + 1 = ${inv?'inválido':out}</span>`;
 }
 
-['H','k','p','s','d'].forEach(name=>{
+function drawTensor3D(out){
+  const {H,k,p,s,d,Cin,Cout}=params;
+  const cv=document.getElementById('cv-tensor');
+  const W=cv.offsetWidth||300;
+  cv.width=W; cv.height=130;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,130);
+
+  const drawVolume=(ox,oy,slabW,slabH,nSlabs,fillCol,strokeCol,labelTop,labelSide)=>{
+    const off=Math.min(4, Math.floor(nSlabs*1.2));
+    const shown=Math.min(nSlabs,8);
+    for(let i=shown-1;i>=0;i--){
+      const dx=i*(off/shown*2), dy=i*(off/shown*2);
+      const alpha=0.3+0.7*(1-(i/(shown)));
+      ctx.fillStyle=fillCol.replace('A',alpha.toFixed(2));
+      ctx.strokeStyle=strokeCol;
+      ctx.lineWidth=0.8;
+      ctx.beginPath();
+      ctx.roundRect(ox+dx,oy-dy,slabW,slabH,2);
+      ctx.fill(); ctx.stroke();
+    }
+    ctx.fillStyle='rgba(200,200,220,0.85)';
+    ctx.font='bold 9px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(labelTop, ox+slabW/2+(shown>1?off:0), oy-(shown>1?off+3:3));
+    ctx.font='9px monospace';
+    ctx.fillStyle='rgba(112,112,160,0.9)';
+    ctx.fillText(labelSide, ox-18, oy+slabH/2);
+  };
+
+  const slabW=Math.min(70, Math.floor(W*0.18));
+  const slabH=Math.min(55, slabW*0.8);
+  const spacing=Math.floor(W/5);
+
+  // Input tensor
+  drawVolume(20, 75, slabW, slabH, Cin,
+    'rgba(110,231,247,A)', '#6ee7f7',
+    `${Cin}×${H}×${H}`, `Cin=${Cin}`);
+
+  // Arrow *
+  ctx.fillStyle='#505070'; ctx.font='18px monospace'; ctx.textAlign='center';
+  ctx.fillText('*', 20+slabW+spacing*0.35, 52);
+  ctx.font='8px monospace'; ctx.fillStyle='#505070';
+  ctx.fillText('conv', 20+slabW+spacing*0.35, 64);
+
+  // Weight tensor
+  drawVolume(20+slabW+spacing*0.7, 75, slabW*0.7, slabH*0.7, Cout,
+    'rgba(176,110,247,A)', '#b06ef7',
+    `${Cout}×${Cin}×${k}×${k}`, `Cout`);
+
+  // Arrow =
+  ctx.fillStyle='#505070'; ctx.font='18px monospace';
+  ctx.fillText('=', 20+slabW+spacing*0.7+slabW*0.7+spacing*0.3, 52);
+
+  // Output tensor
+  drawVolume(20+slabW+spacing*0.7+slabW*0.7+spacing*0.6, 75, slabW, slabH, Cout,
+    'rgba(247,200,110,A)', '#f7c86e',
+    `${Cout}×${out}×${out}`, `Cout=${Cout}`);
+
+  // Labels below
+  ctx.font='8px monospace'; ctx.fillStyle='rgba(112,112,160,0.8)'; ctx.textAlign='center';
+  ctx.fillText('entrada', 20+slabW/2, 118);
+  ctx.fillText('pesos', 20+slabW+spacing*0.7+slabW*0.35, 118);
+  ctx.fillText('salida', 20+slabW+spacing*0.7+slabW*0.7+spacing*0.6+slabW/2, 118);
+}
+
+function updateWeightStats(out, ke, inv){
+  const {H,k,p,s,d,Cin,Cout}=params;
+  const wShape=`(${Cout}, ${Cin}, ${k}, ${k})`;
+  const wParams=Cout*Cin*k*k;
+  const bParams=Cout;
+  const total=wParams+bParams;
+  const inShape=`(N, ${Cin}, ${H}, ${H})`;
+  const outShape=inv?'inválido':`(N, ${Cout}, ${out}, ${out})`;
+
+  const rows=[
+    ['weight.shape', wShape,    '#b06ef7'],
+    ['bias.shape',   `(${Cout},)`, '#b06ef7'],
+    ['pesos (W)',    wParams.toLocaleString(), '#f7c86e'],
+    ['bias (b)',     bParams.toLocaleString(), '#6ee7f7'],
+    ['total params', total.toLocaleString(),  '#6ee7f7'],
+    ['x.shape',      inShape,   '#6ee7f7'],
+    ['y.shape',      outShape,  '#f7c86e'],
+  ];
+  const el=document.getElementById('weight-stats');
+  el.innerHTML=rows.map(([label,val,col])=>
+    `<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid rgba(37,37,53,0.6);padding:3px 0;">
+      <span style="color:var(--muted);font-size:0.6rem">${label}</span>
+      <span style="color:${col};font-size:0.65rem;font-weight:700">${val}</span>
+    </div>`
+  ).join('');
+}
+
+['H','k','p','s','d','Cin','Cout'].forEach(name=>{
   document.getElementById('sl-'+name).addEventListener('input',e=>{
     params[name]=+e.target.value;
     currentStep=0;
@@ -1631,7 +1934,7 @@ function toggleDetails(btn){
 }
 
 /* ── KEYBOARD NAVIGATION ── */
-const TABS=['explorer','kernel','padding','stride','dilation'];
+const TABS=['explorer','kernel','padding','stride','dilation','canales'];
 document.addEventListener('keydown',function(e){
   if(['ArrowRight','ArrowLeft','ArrowDown','ArrowUp'].includes(e.key)){
     const ap=document.querySelector('.panel.active');
