@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipeline de Clasificación de Imágenes</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --surface3: #0d0d15;
+    --border: #252535;
+    --accent: #6ee7f7;
+    --accent2: #f7c86e;
+    --accent3: #b06ef7;
+    --accent4: #6ef7a0;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface2: #eef0f5;
+    --surface3: #f0f1f6;
+    --border: #d0d4e0;
+    --accent: #0a8fa3;
+    --accent2: #b07a00;
+    --accent3: #7a36c9;
+    --accent4: #0a8a3a;
+    --text: #1a1a2e;
+    --muted: #5a5a80;
+  }
+
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; }
+
+  header {
+    padding:2.5rem 2rem 2rem; border-bottom:1px solid var(--border);
+    position:relative; overflow:hidden;
+    display:flex; align-items:flex-end; justify-content:space-between; gap:2rem; flex-wrap:wrap;
+  }
+  header::before { content:''; position:absolute; top:-60px; left:-60px; width:300px; height:300px; background:radial-gradient(circle,rgba(110,231,247,0.08) 0%,transparent 70%); pointer-events:none; }
+  header::after  { content:''; position:absolute; bottom:-80px; right:5%; width:400px; height:400px; background:radial-gradient(circle,rgba(176,110,247,0.06) 0%,transparent 70%); pointer-events:none; }
+  .header-label { font-family:var(--mono); font-size:0.7rem; color:var(--accent); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:0.75rem; }
+  h1 { font-size:clamp(1.8rem,4vw,3rem); font-weight:800; line-height:1.1; letter-spacing:-0.02em; }
+  h1 span { color:var(--accent); }
+  .header-sub { margin-top:0.75rem; color:var(--muted); font-size:0.95rem; font-family:var(--mono); }
+  .header-meta { display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center; flex-shrink:0; }
+  .badge { font-family:var(--mono); font-size:0.68rem; padding:0.3em 0.8em; border-radius:2px; letter-spacing:0.1em; text-transform:uppercase; }
+  .badge-cyan   { background:rgba(110,231,247,0.12); color:var(--accent);  border:1px solid rgba(110,231,247,0.25); }
+  .badge-gold   { background:rgba(247,200,110,0.12); color:var(--accent2); border:1px solid rgba(247,200,110,0.25); }
+  .badge-purple { background:rgba(176,110,247,0.12); color:var(--accent3); border:1px solid rgba(176,110,247,0.25); }
+  .badge-green  { background:rgba(110,247,160,0.12); color:var(--accent4); border:1px solid rgba(110,247,160,0.25); }
+  :root[data-theme="light"] .badge-green { background:rgba(10,138,58,0.1); border-color:rgba(10,138,58,0.25); }
+
+  #theme-toggle {
+    background:var(--surface2); border:1px solid var(--border); color:var(--text);
+    font-family:var(--mono); font-size:0.68rem; padding:0.4em 0.9em; border-radius:3px;
+    cursor:pointer; display:flex; align-items:center; gap:0.4em;
+    transition:border-color 0.2s, background 0.2s; white-space:nowrap; flex-shrink:0;
+  }
+  #theme-toggle:hover { border-color:var(--accent); color:var(--accent); }
+
+  .app-shell { display:flex; min-height:calc(100vh - 160px); }
+
+  .sidebar { width:200px; flex-shrink:0; border-right:1px solid var(--border); padding:2rem 0; position:sticky; top:0; height:100vh; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+  .sidebar-label { font-family:var(--mono); font-size:0.6rem; color:var(--muted); letter-spacing:0.2em; text-transform:uppercase; padding:0 1.25rem 1rem; opacity:0.6; }
+  .sidebar-timeline { position:relative; padding-left:1.25rem; }
+  .sidebar-timeline::before { content:''; position:absolute; left:2rem; top:0.55rem; bottom:0.55rem; width:1px; background:var(--border); }
+
+  .tab-btn { display:flex; align-items:center; gap:0.75rem; width:100%; padding:0.6rem 1rem 0.6rem 0; background:none; border:none; cursor:pointer; position:relative; transition:all 0.2s; text-align:left; }
+  .tab-dot { width:10px; height:10px; border-radius:50%; background:var(--border); border:2px solid var(--border); flex-shrink:0; transition:all 0.25s; position:relative; z-index:1; margin-left:0.75rem; }
+  .tab-btn:hover .tab-dot { background:var(--muted); border-color:var(--muted); }
+  .tab-btn.active .tab-dot { background:var(--accent); border-color:var(--accent); box-shadow:0 0 10px rgba(110,231,247,0.5); }
+  .tab-text { display:flex; flex-direction:column; gap:0.1rem; min-width:0; }
+  .tab-num  { font-family:var(--mono); font-size:0.6rem; color:var(--muted); transition:color 0.2s; }
+  .tab-name { font-size:0.82rem; font-weight:700; color:var(--muted); transition:color 0.2s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tab-btn:hover .tab-name,.tab-btn:hover .tab-num { color:var(--text); }
+  .tab-btn.active .tab-name { color:var(--accent); }
+  .tab-btn.active .tab-num  { color:var(--accent); opacity:0.7; }
+  .tab-btn::before { content:''; position:absolute; left:0; top:0; bottom:0; width:0; background:rgba(110,231,247,0.07); transition:width 0.2s; border-radius:0 3px 3px 0; }
+  .tab-btn.active::before { width:100%; }
+
+  .timeline-wrap { display:none; }
+  .scroll-hint   { display:none; }
+  @media (max-width:860px) {
+    .app-shell { flex-direction:column; }
+    .sidebar { display:none; }
+    .timeline-wrap { display:block; position:relative; padding:2rem 1.5rem 0; }
+    .timeline-bar  { position:absolute; top:2.85rem; left:1.5rem; right:1.5rem; height:1px; background:var(--border); }
+    .tabs-scroll   { overflow-x:auto; scrollbar-width:none; position:relative; z-index:1; }
+    .tabs-scroll::-webkit-scrollbar { display:none; }
+    .tabs { display:flex; gap:0; min-width:max-content; }
+    .tab-btn { flex-direction:column; align-items:center; gap:0.4rem; padding:0 1.25rem 1.25rem; width:auto; }
+    .tab-dot { margin-left:0; }
+    .tab-text { align-items:center; }
+    .tab-name { white-space:nowrap; font-size:0.75rem; }
+    .tab-btn::before { display:none; }
+    .tab-btn::after { content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:0; height:2px; background:var(--accent); transition:width 0.25s; }
+    .tab-btn.active::after { width:100%; }
+    .scroll-hint { display:block; text-align:center; padding:0.4rem; font-family:var(--mono); font-size:0.6rem; color:var(--muted); }
+    .content-area { padding:1.25rem 1rem; }
+    .code-dual { flex-direction:column !important; }
+    .code-dual > div { border-right:none !important; border-bottom:1px solid var(--border); }
+    .code-dual > div:last-child { border-bottom:none; }
+  }
+
+  .content-area { flex:1; min-width:0; padding:2rem; }
+  .panel { display:none; animation:fadeUp 0.35s ease; }
+  .panel.active { display:flex; flex-direction:column; gap:1.5rem; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:4px; overflow:hidden; display:flex; flex-direction:column; }
+  .card-header { padding:1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+  .step-num  { font-family:var(--mono); font-size:0.65rem; color:var(--accent); letter-spacing:0.15em; margin-bottom:0.3rem; }
+  .step-name { font-size:1.6rem; font-weight:800; letter-spacing:-0.02em; line-height:1; }
+  .step-sub  { margin-top:0.4rem; font-family:var(--mono); font-size:0.72rem; color:var(--muted); }
+
+  .explain-section { padding:1.5rem; border-bottom:1px solid var(--border); }
+  .explain-section h3 { font-family:var(--mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:0.85rem; }
+  .explain-text { font-size:0.88rem; line-height:1.75; color:var(--text); }
+  .explain-text strong { color:var(--accent); }
+  .explain-text em { color:var(--accent2); font-style:normal; font-weight:600; }
+
+  .concept-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:0.75rem; margin-top:1rem; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:0.85rem 1rem; }
+  .cc-label { font-family:var(--mono); font-size:0.58rem; color:var(--accent); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:0.35rem; }
+  .cc-val   { font-size:0.8rem; color:var(--text); line-height:1.5; }
+
+  .code-dual { display:flex; border-top:1px solid var(--border); }
+  .code-dual > div { flex:1; min-width:0; padding:1.5rem; display:flex; flex-direction:column; gap:0.75rem; }
+  .code-dual > div:first-child { border-right:1px solid var(--border); }
+  .code-framework { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem; }
+  .fw-badge { font-family:var(--mono); font-size:0.6rem; padding:0.2em 0.65em; border-radius:2px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; }
+  .fw-pytorch { background:rgba(238,119,60,0.15); color:#ee773c; border:1px solid rgba(238,119,60,0.3); }
+  .fw-keras   { background:rgba(255,0,60,0.12);   color:#ff5577; border:1px solid rgba(255,0,60,0.25); }
+  .code-title { font-family:var(--mono); font-size:0.6rem; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase; }
+
+  pre {
+    background:var(--surface3); border:1px solid var(--border); border-radius:3px;
+    padding:1rem; overflow-x:auto; font-family:var(--mono); font-size:0.72rem;
+    line-height:1.75; color:var(--text); flex:1; tab-size:4;
+  }
+  .kw  { color:var(--accent2); }
+  .fn  { color:var(--accent);  }
+  .st  { color:var(--accent3); }
+  .cm  { color:var(--muted);   font-style:italic; }
+  .num { color:var(--accent4); }
+  :root[data-theme="light"] .num { color:#0a8a3a; }
+
+  .tip-box  { margin-top:1rem; background:rgba(110,231,247,0.05); border:1px solid rgba(110,231,247,0.15); border-radius:3px; padding:0.9rem 1rem; font-size:0.82rem; line-height:1.6; }
+  .tip-box strong { color:var(--accent); }
+  .warn-box { margin-top:0.75rem; background:rgba(247,200,110,0.06); border:1px solid rgba(247,200,110,0.2); border-radius:3px; padding:0.9rem 1rem; font-size:0.82rem; line-height:1.6; }
+  .warn-box strong { color:var(--accent2); }
+
+  .tag-list { display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.85rem; }
+  .tag { font-family:var(--mono); font-size:0.62rem; padding:0.25em 0.6em; border-radius:2px; background:var(--surface2); border:1px solid var(--border); color:var(--muted); }
+  .tag.hl { color:var(--accent3); border-color:rgba(176,110,247,0.3); background:rgba(176,110,247,0.08); }
+
+  .metrics-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:0.72rem; margin-top:1rem; }
+  .metrics-table th { background:var(--surface2); color:var(--accent); font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; padding:0.5rem 0.75rem; border:1px solid var(--border); text-align:left; }
+  .metrics-table td { padding:0.5rem 0.75rem; border:1px solid var(--border); color:var(--text); line-height:1.5; vertical-align:top; }
+  .metrics-table tr:nth-child(even) td { background:var(--surface2); }
+
+  .steps-nav { display:flex; gap:0.4rem; flex-wrap:wrap; padding:0.85rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2); }
+  .step-pill { font-family:var(--mono); font-size:0.6rem; padding:0.25em 0.7em; border-radius:2px; background:var(--surface); border:1px solid var(--border); color:var(--muted); }
+  .step-pill.cur { background:rgba(110,231,247,0.12); border-color:var(--accent); color:var(--accent); }
+
+  .pipeline-diagram { padding:1.5rem; border-bottom:1px solid var(--border); }
+  .pipeline-diagram h3 { font-family:var(--mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:1rem; }
+  .pipeline-diagram svg { max-width:100%; height:auto; display:block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-label">// Material de clase · 2024</div>
+    <h1>Pipeline de <span>Clasificación</span><br>de Imágenes</h1>
+    <p class="header-sub">PyTorch · Keras/TensorFlow · Paso a paso</p>
+  </div>
+  <div class="header-meta">
+    <span class="badge badge-cyan">7 Etapas</span>
+    <span class="badge badge-gold">PyTorch</span>
+    <span class="badge badge-purple">Keras / TF</span>
+    <button id="theme-toggle" onclick="toggleTheme()">
+      <span id="theme-icon">☀️</span><span id="theme-label">Modo claro</span>
+    </button>
+  </div>
+</header>
+
+<!-- Mobile tabs -->
+<div class="timeline-wrap">
+  <div class="timeline-bar"></div>
+  <div class="tabs-scroll">
+    <div class="tabs" id="tabs-mobile">
+      <button class="tab-btn active" data-tab="overview"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">00</div><div class="tab-name">Overview</div></div></button>
+      <button class="tab-btn" data-tab="datos"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">01</div><div class="tab-name">Datos</div></div></button>
+      <button class="tab-btn" data-tab="prepro"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">02</div><div class="tab-name">Preproceso</div></div></button>
+      <button class="tab-btn" data-tab="augment"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">03</div><div class="tab-name">Aumentación</div></div></button>
+      <button class="tab-btn" data-tab="modelo"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">04</div><div class="tab-name">Modelo</div></div></button>
+      <button class="tab-btn" data-tab="finetune"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">05</div><div class="tab-name">Fine-tuning</div></div></button>
+      <button class="tab-btn" data-tab="eval"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">06</div><div class="tab-name">Evaluación</div></div></button>
+    </div>
+  </div>
+  <div class="scroll-hint">← scroll →</div>
+</div>
+
+<div class="app-shell">
+<nav class="sidebar">
+  <div class="sidebar-label">// Pipeline</div>
+  <div class="sidebar-timeline">
+    <div class="tabs" id="tabs-sidebar">
+      <button class="tab-btn active" data-tab="overview"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">00 Overview</div><div class="tab-name">Flujo completo</div></div></button>
+      <button class="tab-btn" data-tab="datos"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">01 Datos</div><div class="tab-name">Carga de datos</div></div></button>
+      <button class="tab-btn" data-tab="prepro"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">02 Preproceso</div><div class="tab-name">Normalización</div></div></button>
+      <button class="tab-btn" data-tab="augment"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">03 Aumentación</div><div class="tab-name">Augmentation</div></div></button>
+      <button class="tab-btn" data-tab="modelo"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">04 Modelo</div><div class="tab-name">Cargar + cabeza</div></div></button>
+      <button class="tab-btn" data-tab="finetune"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">05 Fine-tuning</div><div class="tab-name">Entrenamiento</div></div></button>
+      <button class="tab-btn" data-tab="eval"><div class="tab-dot"></div><div class="tab-text"><div class="tab-num">06 Evaluación</div><div class="tab-name">Métricas</div></div></button>
+    </div>
+  </div>
+</nav>
+
+<div class="content-area">
+<div style="padding:0 0 4rem">
+
+<!-- ══════════ 00 OVERVIEW ══════════ -->
+<div class="panel active" id="panel-overview">
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="step-num">// Visión general</div>
+      <div class="step-name">Pipeline End-to-End</div>
+      <div class="step-sub">De imágenes crudas a un modelo evaluado — las 7 etapas</div>
+    </div>
+    <span class="badge badge-cyan">End-to-End</span>
+  </div>
+  <div class="explain-section" style="border-bottom:none">
+    <h3>// ¿Qué es un pipeline de clasificación?</h3>
+    <div class="explain-text">
+      Un <strong>pipeline de clasificación de imágenes</strong> es la secuencia completa de pasos para tomar imágenes crudas y producir un modelo capaz de categorizarlas. Cada etapa transforma o prepara los datos y el modelo para la siguiente. Descuidar cualquier paso produce modelos que no generalizan.<br><br>
+      La práctica moderna consiste en partir de un <em>modelo preentrenado</em> en ImageNet (ResNet, EfficientNet, MobileNet…) y adaptarlo mediante <strong>transfer learning + fine-tuning</strong> en dos fases: primero entrenar solo la nueva cabeza, luego descongelar las capas profundas con un learning rate muy bajo.
+    </div>
+
+    <div class="pipeline-diagram" style="border:none;padding:1.25rem 0 0">
+      <h3>// Diagrama del flujo</h3>
+      <svg width="760" height="130" viewBox="0 0 760 130" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+        <defs>
+          <marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L0,7 L7,3.5 z" fill="#505070"/>
+          </marker>
+        </defs>
+        <!-- Step boxes -->
+        <rect x="0"   y="30" width="90" height="45" rx="3" fill="rgba(110,231,247,0.1)"  stroke="#6ee7f7" stroke-width="1.5"/>
+        <text x="45"  y="49" text-anchor="middle" fill="#6ee7f7" font-size="7.5" font-weight="bold">01</text>
+        <text x="45"  y="62" text-anchor="middle" fill="#6ee7f7" font-size="7">Carga datos</text>
+        <line x1="90" y1="52" x2="104" y2="52" stroke="#505070" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <rect x="106" y="30" width="90" height="45" rx="3" fill="rgba(247,200,110,0.1)"  stroke="#f7c86e" stroke-width="1.5"/>
+        <text x="151" y="49" text-anchor="middle" fill="#f7c86e" font-size="7.5" font-weight="bold">02</text>
+        <text x="151" y="62" text-anchor="middle" fill="#f7c86e" font-size="7">Preproceso</text>
+        <line x1="196" y1="52" x2="210" y2="52" stroke="#505070" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <rect x="212" y="30" width="90" height="45" rx="3" fill="rgba(176,110,247,0.1)"  stroke="#b06ef7" stroke-width="1.5"/>
+        <text x="257" y="49" text-anchor="middle" fill="#b06ef7" font-size="7.5" font-weight="bold">03</text>
+        <text x="257" y="62" text-anchor="middle" fill="#b06ef7" font-size="7">Aumentación</text>
+        <line x1="302" y1="52" x2="316" y2="52" stroke="#505070" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <rect x="318" y="30" width="90" height="45" rx="3" fill="rgba(110,247,160,0.1)"  stroke="#6ef7a0" stroke-width="1.5"/>
+        <text x="363" y="49" text-anchor="middle" fill="#6ef7a0" font-size="7.5" font-weight="bold">04</text>
+        <text x="363" y="56" text-anchor="middle" fill="#6ef7a0" font-size="7">Backbone +</text>
+        <text x="363" y="66" text-anchor="middle" fill="#6ef7a0" font-size="7">nueva cabeza</text>
+        <line x1="408" y1="52" x2="422" y2="52" stroke="#505070" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <rect x="424" y="30" width="90" height="45" rx="3" fill="rgba(238,119,60,0.12)"  stroke="#ee773c" stroke-width="1.5"/>
+        <text x="469" y="49" text-anchor="middle" fill="#ee773c" font-size="7.5" font-weight="bold">05a</text>
+        <text x="469" y="58" text-anchor="middle" fill="#ee773c" font-size="7">Fine-tuning</text>
+        <text x="469" y="68" text-anchor="middle" fill="#ee773c" font-size="7">fase 1 (head)</text>
+        <line x1="514" y1="52" x2="528" y2="52" stroke="#505070" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <rect x="530" y="30" width="90" height="45" rx="3" fill="rgba(255,80,120,0.1)"   stroke="#ff5577" stroke-width="1.5"/>
+        <text x="575" y="49" text-anchor="middle" fill="#ff5577" font-size="7.5" font-weight="bold">05b</text>
+        <text x="575" y="58" text-anchor="middle" fill="#ff5577" font-size="7">Fine-tuning</text>
+        <text x="575" y="68" text-anchor="middle" fill="#ff5577" font-size="7">fase 2 (deep)</text>
+        <line x1="620" y1="52" x2="634" y2="52" stroke="#505070" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <rect x="636" y="30" width="90" height="45" rx="3" fill="rgba(247,200,110,0.12)" stroke="#f7c86e" stroke-width="1.5"/>
+        <text x="681" y="49" text-anchor="middle" fill="#f7c86e" font-size="7.5" font-weight="bold">06</text>
+        <text x="681" y="62" text-anchor="middle" fill="#f7c86e" font-size="7">Evaluación</text>
+
+        <text x="380" y="105" text-anchor="middle" fill="#505070" font-size="7">imágenes crudas ——————————————————————————————————————— modelo evaluado</text>
+      </svg>
+    </div>
+
+    <div class="concept-grid" style="margin-top:1.25rem">
+      <div class="concept-card"><div class="cc-label">Dataset splits</div><div class="cc-val">Train / Val / Test — nunca evalúes sobre datos de entrenamiento</div></div>
+      <div class="concept-card"><div class="cc-label">Transfer Learning</div><div class="cc-val">Pesos preentrenados en ImageNet como punto de partida eficiente</div></div>
+      <div class="concept-card"><div class="cc-label">Fase 1 — Head</div><div class="cc-val">Backbone congelado, solo entrena la nueva cabeza con LR ~1e-3</div></div>
+      <div class="concept-card"><div class="cc-label">Fase 2 — Deep FT</div><div class="cc-val">Descongela últimas capas, LR 10–100× menor para no destruir pesos</div></div>
+      <div class="concept-card"><div class="cc-label">Augmentation</div><div class="cc-val">Solo en train — regularizador implícito, mejora generalización</div></div>
+      <div class="concept-card"><div class="cc-label">Early Stopping</div><div class="cc-val">Guarda el mejor checkpoint según val_accuracy, no el último epoch</div></div>
+    </div>
+    <div class="tip-box" style="margin-top:1rem">
+      <strong>Regla de oro:</strong> Empieza siempre con el backbone completamente congelado. Cuando la cabeza haya convergido, descongela progresivamente las capas más profundas con LR ~10× menor. Esto garantiza que los pesos de ImageNet no se destruyan al inicio del entrenamiento.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════ 01 DATOS ══════════ -->
+<div class="panel" id="panel-datos">
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="step-num">// Etapa 01</div>
+      <div class="step-name">Carga de Datos</div>
+      <div class="step-sub">Estructura de carpetas · ImageFolder · tf.data · DataLoader</div>
+    </div>
+    <span class="badge badge-cyan">Step 01</span>
+  </div>
+  <div class="steps-nav">
+    <span class="step-pill cur">01 Datos</span>
+    <span class="step-pill">02 Preproceso</span><span class="step-pill">03 Augment</span>
+    <span class="step-pill">04 Modelo</span><span class="step-pill">05 Fine-tuning</span><span class="step-pill">06 Eval</span>
+  </div>
+  <div class="explain-section">
+    <h3>// Estructura de carpetas y conceptos clave</h3>
+    <div class="explain-text">
+      La convención más común es <strong>una carpeta por clase</strong>. PyTorch la detecta automáticamente con <em>ImageFolder</em>; Keras con <em>image_dataset_from_directory</em>. Divide siempre en <strong>train / val / test</strong> antes de cualquier preprocesamiento.
+    </div>
+<pre style="margin-top:0.85rem;font-size:0.68rem">
+dataset/
+├── train/
+│   ├── gato/   ← nombre de la clase = etiqueta
+│   │   ├── img001.jpg
+│   │   └── img002.jpg
+│   └── perro/
+│       └── img003.jpg
+├── val/
+│   ├── gato/  ...
+│   └── perro/ ...
+└── test/
+    ├── gato/  ...
+    └── perro/ ...
+</pre>
+    <div class="concept-grid">
+      <div class="concept-card"><div class="cc-label">ImageFolder (PyTorch)</div><div class="cc-val">Lee la estructura de carpetas y asigna etiquetas automáticamente</div></div>
+      <div class="concept-card"><div class="cc-label">DataLoader</div><div class="cc-val">Envuelve el Dataset: shuffle, batch, workers en paralelo, pin_memory</div></div>
+      <div class="concept-card"><div class="cc-label">image_dataset_from_directory</div><div class="cc-val">Equivalente en Keras — devuelve tf.data.Dataset listo para usar</div></div>
+      <div class="concept-card"><div class="cc-label">cache() + prefetch()</div><div class="cc-val">Optimizaciones de tf.data: cache guarda en RAM, prefetch solapa CPU/GPU</div></div>
+    </div>
+    <div class="warn-box" style="margin-top:1rem"><strong>⚠ Data leakage:</strong> Las transformaciones de augmentation deben aplicarse <em>solo al split train</em>. Val y test siempre usan transformaciones fijas para que la evaluación sea reproducible.</div>
+  </div>
+  <div class="code-dual">
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-pytorch">PyTorch</span><span class="code-title">ImageFolder + DataLoader</span></div>
+<pre><span class="kw">from</span> torchvision <span class="kw">import</span> datasets, transforms
+<span class="kw">from</span> torch.utils.data <span class="kw">import</span> DataLoader
+
+<span class="cm"># Transformación base sin augmentación</span>
+basic_tf = transforms.<span class="fn">Compose</span>([
+    transforms.<span class="fn">Resize</span>((<span class="num">224</span>, <span class="num">224</span>)),
+    transforms.<span class="fn">ToTensor</span>(),
+])
+
+<span class="cm"># Cargar desde estructura de carpetas</span>
+train_ds = datasets.<span class="fn">ImageFolder</span>(
+    <span class="st">'dataset/train'</span>, transform=basic_tf
+)
+val_ds = datasets.<span class="fn">ImageFolder</span>(
+    <span class="st">'dataset/val'</span>, transform=basic_tf
+)
+test_ds = datasets.<span class="fn">ImageFolder</span>(
+    <span class="st">'dataset/test'</span>, transform=basic_tf
+)
+
+<span class="cm"># DataLoaders</span>
+train_dl = <span class="fn">DataLoader</span>(
+    train_ds, batch_size=<span class="num">32</span>,
+    shuffle=<span class="nb">True</span>,
+    num_workers=<span class="num">4</span>,    <span class="cm"># 0 en Colab si falla</span>
+    pin_memory=<span class="nb">True</span>   <span class="cm"># más rápido con GPU</span>
+)
+val_dl = <span class="fn">DataLoader</span>(
+    val_ds, batch_size=<span class="num">32</span>,
+    shuffle=<span class="nb">False</span>, num_workers=<span class="num">4</span>
+)
+
+<span class="cm"># Verificar clases y shapes</span>
+<span class="nb">print</span>(train_ds.classes)   <span class="cm"># ['gato', 'perro']</span>
+imgs, labels = <span class="fn">next</span>(<span class="fn">iter</span>(train_dl))
+<span class="nb">print</span>(imgs.shape)    <span class="cm"># [32, 3, 224, 224]</span>
+<span class="nb">print</span>(labels.shape)  <span class="cm"># [32]</span></pre>
+    </div>
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-keras">Keras / TF</span><span class="code-title">image_dataset_from_directory</span></div>
+<pre><span class="kw">import</span> tensorflow <span class="kw">as</span> tf
+<span class="kw">from</span> tensorflow <span class="kw">import</span> keras
+
+IMG_SIZE = (<span class="num">224</span>, <span class="num">224</span>)
+BATCH    = <span class="num">32</span>
+AUTOTUNE = tf.data.AUTOTUNE
+
+train_ds = keras.utils.<span class="fn">image_dataset_from_directory</span>(
+    <span class="st">'dataset/train'</span>,
+    image_size=IMG_SIZE,
+    batch_size=BATCH,
+    label_mode=<span class="st">'int'</span>,
+    shuffle=<span class="nb">True</span>, seed=<span class="num">42</span>
+)
+val_ds = keras.utils.<span class="fn">image_dataset_from_directory</span>(
+    <span class="st">'dataset/val'</span>,
+    image_size=IMG_SIZE,
+    batch_size=BATCH,
+    label_mode=<span class="st">'int'</span>,
+    shuffle=<span class="nb">False</span>
+)
+test_ds = keras.utils.<span class="fn">image_dataset_from_directory</span>(
+    <span class="st">'dataset/test'</span>,
+    image_size=IMG_SIZE,
+    batch_size=BATCH,
+    label_mode=<span class="st">'int'</span>,
+    shuffle=<span class="nb">False</span>
+)
+
+<span class="cm"># Optimizar pipeline</span>
+train_ds = train_ds.<span class="fn">cache</span>().<span class="fn">prefetch</span>(AUTOTUNE)
+val_ds   = val_ds.<span class="fn">prefetch</span>(AUTOTUNE)
+test_ds  = test_ds.<span class="fn">prefetch</span>(AUTOTUNE)
+
+<span class="cm"># Ver clases y shapes</span>
+<span class="nb">print</span>(train_ds.class_names)   <span class="cm"># ['gato', 'perro']</span>
+<span class="kw">for</span> imgs, labels <span class="kw">in</span> train_ds.<span class="fn">take</span>(<span class="num">1</span>):
+    <span class="nb">print</span>(imgs.shape)   <span class="cm"># (32, 224, 224, 3)</span>
+    <span class="nb">print</span>(labels.shape) <span class="cm"># (32,)</span></pre>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════ 02 PREPROCESO ══════════ -->
+<div class="panel" id="panel-prepro">
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="step-num">// Etapa 02</div>
+      <div class="step-name">Preprocesamiento</div>
+      <div class="step-sub">Resize · Normalización · Estadísticas ImageNet</div>
+    </div>
+    <span class="badge badge-gold">Step 02</span>
+  </div>
+  <div class="steps-nav">
+    <span class="step-pill">01 Datos</span><span class="step-pill cur">02 Preproceso</span>
+    <span class="step-pill">03 Augment</span><span class="step-pill">04 Modelo</span>
+    <span class="step-pill">05 Fine-tuning</span><span class="step-pill">06 Eval</span>
+  </div>
+  <div class="explain-section">
+    <h3>// ¿Por qué normalizar con las stats de ImageNet?</h3>
+    <div class="explain-text">
+      Los modelos preentrenados en ImageNet esperan imágenes normalizadas con las <strong>medias y desviaciones de ImageNet</strong>. Si normalizas diferente, la distribución de activaciones en el backbone será completamente distinta a lo que los pesos esperan, y el transfer learning fallará.<br><br>
+      El flujo es siempre: píxeles [0,255] → <em>ToTensor</em> convierte a [0,1] con forma (C,H,W) → <em>Normalize</em> centra y escala por canal.
+    </div>
+    <div class="concept-grid">
+      <div class="concept-card"><div class="cc-label">mean ImageNet</div><div class="cc-val">[0.485, 0.456, 0.406] — por canal R, G, B</div></div>
+      <div class="concept-card"><div class="cc-label">std ImageNet</div><div class="cc-val">[0.229, 0.224, 0.225] — por canal R, G, B</div></div>
+      <div class="concept-card"><div class="cc-label">Fórmula</div><div class="cc-val">x_norm = (x − mean) / std, aplicada canal a canal</div></div>
+      <div class="concept-card"><div class="cc-label">Eval estándar</div><div class="cc-val">Resize(256) → CenterCrop(224) — igual que evaluación original de ImageNet</div></div>
+    </div>
+    <div class="tip-box" style="margin-top:1rem"><strong>Regla de oro:</strong> La normalización de <strong>val y test nunca incluye augmentation</strong>. Solo Resize + CenterCrop + ToTensor + Normalize. Las estadísticas son siempre las de ImageNet si usas transfer learning.</div>
+  </div>
+  <div class="code-dual">
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-pytorch">PyTorch</span><span class="code-title">transforms.Normalize — stats ImageNet</span></div>
+<pre><span class="kw">from</span> torchvision <span class="kw">import</span> transforms
+<span class="kw">import</span> torch
+
+MEAN = [<span class="num">0.485</span>, <span class="num">0.456</span>, <span class="num">0.406</span>]
+STD  = [<span class="num">0.229</span>, <span class="num">0.224</span>, <span class="num">0.225</span>]
+
+<span class="cm"># Transform SOLO para VAL / TEST</span>
+<span class="cm"># (sin ninguna augmentación)</span>
+val_transform = transforms.<span class="fn">Compose</span>([
+    transforms.<span class="fn">Resize</span>(<span class="num">256</span>),
+    transforms.<span class="fn">CenterCrop</span>(<span class="num">224</span>),
+    transforms.<span class="fn">ToTensor</span>(),       <span class="cm"># → [0,1], (C,H,W)</span>
+    transforms.<span class="fn">Normalize</span>(
+        mean=MEAN, std=STD
+    ),
+])
+
+<span class="cm"># Aplicar al dataset de val/test</span>
+val_ds.transform  = val_transform
+test_ds.transform = val_transform
+
+<span class="cm"># Utilidad: deshacer normalización (visualizar)</span>
+<span class="kw">def</span> <span class="fn">denormalize</span>(tensor):
+    <span class="cm"># tensor: (C, H, W) ya en CPU</span>
+    m = torch.<span class="fn">tensor</span>(MEAN).<span class="fn">view</span>(<span class="num">3</span>,<span class="num">1</span>,<span class="num">1</span>)
+    s = torch.<span class="fn">tensor</span>(STD).<span class="fn">view</span>(<span class="num">3</span>,<span class="num">1</span>,<span class="num">1</span>)
+    <span class="kw">return</span> (tensor * s + m).<span class="fn">clamp</span>(<span class="num">0</span>, <span class="num">1</span>)</pre>
+    </div>
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-keras">Keras / TF</span><span class="code-title">preprocess_input por arquitectura</span></div>
+<pre><span class="kw">import</span> tensorflow <span class="kw">as</span> tf
+<span class="kw">from</span> tensorflow.keras.applications <span class="kw">import</span> (
+    resnet50, efficientnet_v2, mobilenet_v3
+)
+
+<span class="cm"># Cada arquitectura tiene su propio</span>
+<span class="cm"># preprocess_input — úsalo siempre</span>
+preprocess = resnet50.<span class="fn">preprocess_input</span>
+<span class="cm"># Alternativas:</span>
+<span class="cm"># efficientnet_v2.preprocess_input</span>
+<span class="cm"># mobilenet_v3.preprocess_input</span>
+
+<span class="cm"># Aplicar en el pipeline tf.data</span>
+<span class="kw">def</span> <span class="fn">preprocess_batch</span>(images, labels):
+    images = tf.<span class="fn">cast</span>(images, tf.float32)
+    images = <span class="fn">preprocess</span>(images)
+    <span class="kw">return</span> images, labels
+
+val_ds  = val_ds.<span class="fn">map</span>(
+    preprocess_batch,
+    num_parallel_calls=tf.data.AUTOTUNE
+)
+test_ds = test_ds.<span class="fn">map</span>(
+    preprocess_batch,
+    num_parallel_calls=tf.data.AUTOTUNE
+)
+
+<span class="cm"># Alternativa moderna: capa dentro del modelo</span>
+rescale = tf.keras.layers.<span class="fn">Rescaling</span>(<span class="num">1.</span>/<span class="num">255</span>)
+normalize = tf.keras.layers.<span class="fn">Normalization</span>(
+    mean=[<span class="num">0.485</span>, <span class="num">0.456</span>, <span class="num">0.406</span>],
+    variance=[<span class="num">0.052</span>, <span class="num">0.050</span>, <span class="num">0.051</span>]
+)</pre>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════ 03 AUGMENTATION ══════════ -->
+<div class="panel" id="panel-augment">
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="step-num">// Etapa 03</div>
+      <div class="step-name">Data Augmentation</div>
+      <div class="step-sub">Transformaciones aleatorias · Regularización implícita · Solo en train</div>
+    </div>
+    <span class="badge badge-purple">Step 03</span>
+  </div>
+  <div class="steps-nav">
+    <span class="step-pill">01 Datos</span><span class="step-pill">02 Preproceso</span>
+    <span class="step-pill cur">03 Augment</span><span class="step-pill">04 Modelo</span>
+    <span class="step-pill">05 Fine-tuning</span><span class="step-pill">06 Eval</span>
+  </div>
+  <div class="explain-section">
+    <h3>// ¿Qué es y por qué funciona?</h3>
+    <div class="explain-text">
+      La <strong>aumentación de datos</strong> aplica transformaciones aleatorias durante el entrenamiento: el modelo ve versiones distintas de la misma imagen en cada epoch. Actúa como <em>regularizador implícito</em> forzando al modelo a aprender características invariantes a rotaciones, flips, cambios de color, etc.<br><br>
+      Usa aumentaciones realistas para tu dominio. Si clasificas células microscópicas, las rotaciones 360° tienen sentido. Si clasificas textos escritos, el flip vertical no lo tiene.
+    </div>
+    <div class="concept-grid">
+      <div class="concept-card"><div class="cc-label">RandomHorizontalFlip</div><div class="cc-val">Flip horizontal p=0.5 — casi siempre útil en imágenes naturales</div></div>
+      <div class="concept-card"><div class="cc-label">RandomResizedCrop</div><div class="cc-val">Crop + resize aleatorio — el modelo no ve siempre el centro completo</div></div>
+      <div class="concept-card"><div class="cc-label">ColorJitter</div><div class="cc-val">Varía brillo, contraste, saturación y tono — bueno para variación de iluminación</div></div>
+      <div class="concept-card"><div class="cc-label">RandomRotation</div><div class="cc-val">Rotaciones pequeñas ±15° para robustez a la orientación</div></div>
+      <div class="concept-card"><div class="cc-label">RandAugment</div><div class="cc-val">Política aprendida automáticamente — torchvision lo incluye listo</div></div>
+      <div class="concept-card"><div class="cc-label">MixUp / CutMix</div><div class="cc-val">Técnicas avanzadas que mezclan imágenes — muy efectivas para datasets pequeños</div></div>
+    </div>
+    <div class="warn-box" style="margin-top:1rem"><strong>⚠ Solo en TRAIN:</strong> Val y test siempre usan transformaciones fijas (Resize + CenterCrop + Normalize) para que la evaluación sea reproducible y comparable entre experimentos.</div>
+  </div>
+  <div class="code-dual">
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-pytorch">PyTorch</span><span class="code-title">transforms — pipeline TRAIN completo</span></div>
+<pre><span class="kw">from</span> torchvision <span class="kw">import</span> transforms, datasets
+<span class="kw">from</span> torch.utils.data <span class="kw">import</span> DataLoader
+
+MEAN = [<span class="num">0.485</span>, <span class="num">0.456</span>, <span class="num">0.406</span>]
+STD  = [<span class="num">0.229</span>, <span class="num">0.224</span>, <span class="num">0.225</span>]
+
+<span class="cm"># TRAIN: augmentation + normalización</span>
+train_transform = transforms.<span class="fn">Compose</span>([
+    transforms.<span class="fn">RandomResizedCrop</span>(<span class="num">224</span>),
+    transforms.<span class="fn">RandomHorizontalFlip</span>(p=<span class="num">0.5</span>),
+    transforms.<span class="fn">ColorJitter</span>(
+        brightness=<span class="num">0.3</span>, contrast=<span class="num">0.3</span>,
+        saturation=<span class="num">0.2</span>, hue=<span class="num">0.1</span>
+    ),
+    transforms.<span class="fn">RandomRotation</span>(<span class="num">15</span>),
+    transforms.<span class="fn">ToTensor</span>(),
+    transforms.<span class="fn">Normalize</span>(MEAN, STD),
+])
+
+<span class="cm"># VAL / TEST: determinista, sin augmentación</span>
+val_transform = transforms.<span class="fn">Compose</span>([
+    transforms.<span class="fn">Resize</span>(<span class="num">256</span>),
+    transforms.<span class="fn">CenterCrop</span>(<span class="num">224</span>),
+    transforms.<span class="fn">ToTensor</span>(),
+    transforms.<span class="fn">Normalize</span>(MEAN, STD),
+])
+
+<span class="cm"># Aplicar transforms distintos</span>
+train_ds = datasets.<span class="fn">ImageFolder</span>(
+    <span class="st">'dataset/train'</span>, transform=train_transform)
+val_ds   = datasets.<span class="fn">ImageFolder</span>(
+    <span class="st">'dataset/val'</span>,   transform=val_transform)
+
+<span class="cm"># RandAugment — política automática avanzada</span>
+train_aug_v2 = transforms.<span class="fn">Compose</span>([
+    transforms.<span class="fn">RandomResizedCrop</span>(<span class="num">224</span>),
+    transforms.<span class="fn">RandAugment</span>(
+        num_ops=<span class="num">2</span>, magnitude=<span class="num">9</span>
+    ),
+    transforms.<span class="fn">ToTensor</span>(),
+    transforms.<span class="fn">Normalize</span>(MEAN, STD),
+])</pre>
+    </div>
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-keras">Keras / TF</span><span class="code-title">Capas de augmentation — activas solo en training=True</span></div>
+<pre><span class="kw">from</span> tensorflow <span class="kw">import</span> keras
+<span class="kw">import</span> tensorflow <span class="kw">as</span> tf
+
+<span class="cm"># Bloque de augmentation como Sequential</span>
+<span class="cm"># Solo activo cuando training=True</span>
+data_augmentation = keras.<span class="fn">Sequential</span>([
+    keras.layers.<span class="fn">RandomFlip</span>(<span class="st">'horizontal'</span>),
+    keras.layers.<span class="fn">RandomRotation</span>(<span class="num">0.1</span>),
+    keras.layers.<span class="fn">RandomZoom</span>(<span class="num">0.2</span>),
+    keras.layers.<span class="fn">RandomContrast</span>(<span class="num">0.2</span>),
+    keras.layers.<span class="fn">RandomBrightness</span>(<span class="num">0.15</span>),
+    keras.layers.<span class="fn">RandomCrop</span>(<span class="num">224</span>, <span class="num">224</span>),
+], name=<span class="st">'data_augmentation'</span>)
+
+<span class="cm"># Alternativa: augmentation en tf.data.map</span>
+<span class="kw">def</span> <span class="fn">augment</span>(image, label):
+    image = tf.image.<span class="fn">random_flip_left_right</span>(image)
+    image = tf.image.<span class="fn">random_brightness</span>(image, <span class="num">0.2</span>)
+    image = tf.image.<span class="fn">random_contrast</span>(
+        image, <span class="num">0.8</span>, <span class="num">1.2</span>)
+    image = tf.image.<span class="fn">random_saturation</span>(
+        image, <span class="num">0.8</span>, <span class="num">1.2</span>)
+    image = tf.image.<span class="fn">random_hue</span>(image, <span class="num">0.1</span>)
+    <span class="kw">return</span> image, label
+
+<span class="cm"># Aplicar SOLO al split de train</span>
+train_ds = train_ds.<span class="fn">map</span>(
+    augment,
+    num_parallel_calls=tf.data.AUTOTUNE
+).<span class="fn">prefetch</span>(tf.data.AUTOTUNE)
+
+<span class="cm"># val_ds NO lleva augment — solo prefetch</span>
+val_ds = val_ds.<span class="fn">prefetch</span>(tf.data.AUTOTUNE)</pre>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════ 04 MODELO ══════════ -->
+<div class="panel" id="panel-modelo">
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="step-num">// Etapa 04</div>
+      <div class="step-name">Backbone + Nueva Cabeza</div>
+      <div class="step-sub">Cargar modelo preentrenado · Congelar backbone · Reemplazar capa final</div>
+    </div>
+    <span class="badge badge-green">Step 04</span>
+  </div>
+  <div class="steps-nav">
+    <span class="step-pill">01 Datos</span><span class="step-pill">02 Preproceso</span>
+    <span class="step-pill">03 Augment</span><span class="step-pill cur">04 Modelo</span>
+    <span class="step-pill">05 Fine-tuning</span><span class="step-pill">06 Eval</span>
+  </div>
+  <div class="explain-section">
+    <h3>// Transfer Learning: reutilizar el conocimiento</h3>
+    <div class="explain-text">
+      El <strong>transfer learning</strong> toma una red entrenada en ImageNet (1.2M imágenes, 1000 clases) y la adapta a tu tarea. El backbone ha aprendido detectores de bordes, texturas y formas útiles para casi cualquier problema de visión.<br><br>
+      El proceso: <em>(1)</em> Cargar el modelo sin la cabeza final (include_top=False en Keras); <em>(2)</em> Congelar todos los pesos del backbone; <em>(3)</em> Añadir una nueva cabeza con tu número de clases + opcional Dropout.
+    </div>
+    <div class="concept-grid">
+      <div class="concept-card"><div class="cc-label">Backbone / Base</div><div class="cc-val">Todo menos la última capa FC — extractor de features jerárquicos</div></div>
+      <div class="concept-card"><div class="cc-label">Head / Cabeza</div><div class="cc-val">Nuevas capas FC que producen la predicción para TUS clases</div></div>
+      <div class="concept-card"><div class="cc-label">requires_grad=False</div><div class="cc-val">Congela parámetros en PyTorch — no participan en backprop</div></div>
+      <div class="concept-card"><div class="cc-label">trainable=False</div><div class="cc-val">Equivalente en Keras — congela todas las capas del backbone</div></div>
+      <div class="concept-card"><div class="cc-label">GlobalAveragePooling2D</div><div class="cc-val">Colapsa el mapa espacial a un vector — sustituye al Flatten en redes modernas</div></div>
+      <div class="concept-card"><div class="cc-label">Dropout</div><div class="cc-val">Regularización en la cabeza — p=0.2 a 0.5 según el tamaño del dataset</div></div>
+    </div>
+    <div class="tip-box" style="margin-top:1rem"><strong>¿Qué modelo elegir?</strong> ResNet50 = clásico confiable. EfficientNetV2-S = mejor precisión/eficiencia. MobileNetV3 = cuando necesitas velocidad. ViT-B/16 = SOTA con muchos datos. Para &lt;1k imágenes, congela más capas y usa más Dropout.</div>
+  </div>
+  <div class="code-dual">
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-pytorch">PyTorch</span><span class="code-title">ResNet50 — reemplazar fc + congelar backbone</span></div>
+<pre><span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+<span class="kw">from</span> torchvision <span class="kw">import</span> models
+
+NUM_CLASSES = <span class="num">10</span>
+device = (<span class="st">'cuda'</span> <span class="kw">if</span> torch.cuda.<span class="fn">is_available</span>()
+          <span class="kw">else</span> <span class="st">'cpu'</span>)
+
+<span class="cm"># Cargar ResNet50 preentrenado</span>
+model = models.<span class="fn">resnet50</span>(
+    weights=models.ResNet50_Weights.DEFAULT
+)
+
+<span class="cm"># ── FASE 1: congelar backbone ──────</span>
+<span class="kw">for</span> param <span class="kw">in</span> model.<span class="fn">parameters</span>():
+    param.requires_grad = <span class="nb">False</span>
+
+<span class="cm"># Reemplazar la capa de clasificación</span>
+<span class="cm"># ResNet50.fc = Linear(2048 → 1000)</span>
+in_f = model.fc.in_features   <span class="cm"># 2048</span>
+model.fc = nn.<span class="fn">Sequential</span>(
+    nn.<span class="fn">Dropout</span>(<span class="num">0.3</span>),
+    nn.<span class="fn">Linear</span>(in_f, NUM_CLASSES)
+)
+<span class="cm"># Ahora solo model.fc tiene grad=True</span>
+model = model.<span class="fn">to</span>(device)
+
+<span class="cm"># Otros modelos — propiedad equivalente:</span>
+<span class="cm"># EfficientNet: model.classifier[1]</span>
+<span class="cm"># MobileNetV3:  model.classifier[3]</span>
+<span class="cm"># DenseNet:     model.classifier</span>
+<span class="cm"># ViT:          model.heads.head</span>
+
+<span class="cm"># Verificar parámetros entrenables</span>
+total = <span class="fn">sum</span>(
+    p.<span class="fn">numel</span>() <span class="kw">for</span> p <span class="kw">in</span> model.<span class="fn">parameters</span>())
+train_p = <span class="fn">sum</span>(
+    p.<span class="fn">numel</span>() <span class="kw">for</span> p <span class="kw">in</span> model.<span class="fn">parameters</span>()
+    <span class="kw">if</span> p.requires_grad)
+<span class="nb">print</span>(<span class="fn">f</span><span class="st">"Total:      {total:>12,}"</span>)
+<span class="nb">print</span>(<span class="fn">f</span><span class="st">"Entrenables:{train_p:>12,}"</span>)
+<span class="cm"># Total: ~25M | Entrenables: ~20K</span></pre>
+    </div>
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-keras">Keras / TF</span><span class="code-title">EfficientNetV2S — base congelada + nueva cabeza</span></div>
+<pre><span class="kw">from</span> tensorflow <span class="kw">import</span> keras
+<span class="kw">import</span> tensorflow <span class="kw">as</span> tf
+
+NUM_CLASSES = <span class="num">10</span>
+IMG_SHAPE   = (<span class="num">224</span>, <span class="num">224</span>, <span class="num">3</span>)
+
+<span class="cm"># Backbone sin la cabeza final</span>
+base_model = keras.applications.<span class="fn">EfficientNetV2S</span>(
+    input_shape=IMG_SHAPE,
+    include_top=<span class="nb">False</span>,
+    weights=<span class="st">'imagenet'</span>
+)
+
+<span class="cm"># ── FASE 1: congelar backbone ──────</span>
+base_model.trainable = <span class="nb">False</span>
+
+<span class="cm"># Construir modelo con Functional API</span>
+inputs = keras.<span class="fn">Input</span>(shape=IMG_SHAPE)
+<span class="cm"># augmentation dentro del modelo</span>
+x = data_augmentation(inputs)
+<span class="cm"># training=False: BN en modo inferencia</span>
+x = base_model(x, training=<span class="nb">False</span>)
+x = keras.layers.<span class="fn">GlobalAveragePooling2D</span>()(x)
+x = keras.layers.<span class="fn">BatchNormalization</span>()(x)
+x = keras.layers.<span class="fn">Dropout</span>(<span class="num">0.3</span>)(x)
+outputs = keras.layers.<span class="fn">Dense</span>(
+    NUM_CLASSES,
+    activation=<span class="st">'softmax'</span>
+)(x)
+model = keras.<span class="fn">Model</span>(inputs, outputs)
+
+<span class="cm"># Otros modelos — equivalente:</span>
+<span class="cm"># ResNet50 / MobileNetV3 / InceptionV3</span>
+<span class="cm"># misma API, mismo include_top=False</span>
+
+<span class="cm"># Verificar</span>
+<span class="nb">print</span>(<span class="fn">f</span><span class="st">"Capas totales: {len(model.layers)}"</span>)
+trainable = <span class="fn">sum</span>(
+    <span class="fn">len</span>(l.trainable_weights)
+    <span class="kw">for</span> l <span class="kw">in</span> model.layers)
+<span class="nb">print</span>(<span class="fn">f</span><span class="st">"Capas entrenables: {trainable}"</span>)</pre>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════ 05 FINE-TUNING ══════════ -->
+<div class="panel" id="panel-finetune">
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="step-num">// Etapa 05</div>
+      <div class="step-name">Fine-tuning</div>
+      <div class="step-sub">Fase 1: head · Fase 2: backbone · LR scheduling · Early stopping · Checkpoints</div>
+    </div>
+    <span class="badge badge-purple">Step 05</span>
+  </div>
+  <div class="steps-nav">
+    <span class="step-pill">01 Datos</span><span class="step-pill">02 Preproceso</span>
+    <span class="step-pill">03 Augment</span><span class="step-pill">04 Modelo</span>
+    <span class="step-pill cur">05 Fine-tuning</span><span class="step-pill">06 Eval</span>
+  </div>
+  <div class="explain-section">
+    <h3>// Dos fases para no destruir los pesos preentrenados</h3>
+    <div class="explain-text">
+      <strong>Fase 1 — Feature extraction (5–15 epochs):</strong> Backbone congelado. Solo la cabeza entrena con LR normal (~1e-3). Rápido y seguro. El backbone actúa como extractor de features fijo.<br><br>
+      <strong>Fase 2 — Fine-tuning profundo (10–30 epochs):</strong> Descongela las últimas N capas del backbone y sigue entrenando con <em>LR muy bajo</em> (~1e-5 a 1e-4). Adapta los features del backbone a tu dominio sin destruir lo aprendido. Usa LRs diferenciales: más bajo en capas antiguas, más alto en las nuevas.
+    </div>
+    <div class="concept-grid">
+      <div class="concept-card"><div class="cc-label">LR Fase 1</div><div class="cc-val">~1e-3 — solo la cabeza, puede ser relativamente alto</div></div>
+      <div class="concept-card"><div class="cc-label">LR Fase 2</div><div class="cc-val">~1e-5 a 1e-4 — backbone, extremadamente conservador</div></div>
+      <div class="concept-card"><div class="cc-label">CosineAnnealingLR</div><div class="cc-val">Decae el LR suavemente en coseno — mejor que StepLR en fine-tuning</div></div>
+      <div class="concept-card"><div class="cc-label">ReduceLROnPlateau</div><div class="cc-val">Reduce LR cuando val_loss no mejora en N epochs — adaptativo</div></div>
+      <div class="concept-card"><div class="cc-label">Early Stopping</div><div class="cc-val">Detener cuando val_loss no mejora en patience epochs</div></div>
+      <div class="concept-card"><div class="cc-label">Gradient Clipping</div><div class="cc-val">clip_grad_norm_(1.0) — estabiliza el entrenamiento en fase 2</div></div>
+    </div>
+    <div class="tip-box" style="margin-top:1rem"><strong>¿Cuántas capas descongelar?</strong> Empieza con las últimas 2-3 capas (layer4 en ResNet, top_conv + top_bn en EfficientNet). Con más datos puedes descongelar más. Con &lt;1k imágenes quédate en fase 1.</div>
+  </div>
+  <div class="code-dual">
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-pytorch">PyTorch</span><span class="code-title">Bucle completo — 2 fases + early stopping</span></div>
+<pre><span class="kw">import</span> torch.optim <span class="kw">as</span> optim
+
+criterion = nn.<span class="fn">CrossEntropyLoss</span>()
+
+<span class="cm"># ── FASE 1 ────────────────────────────</span>
+optimizer = optim.<span class="fn">AdamW</span>(
+    model.fc.<span class="fn">parameters</span>(),
+    lr=<span class="num">1e-3</span>, weight_decay=<span class="num">1e-4</span>
+)
+scheduler = optim.lr_scheduler.<span class="fn">CosineAnnealingLR</span>(
+    optimizer, T_max=<span class="num">10</span>
+)
+
+<span class="kw">def</span> <span class="fn">run_epoch</span>(model, loader, opt, crit, train):
+    model.<span class="fn">train</span>() <span class="kw">if</span> train <span class="kw">else</span> model.<span class="fn">eval</span>()
+    loss_sum, correct = <span class="num">0</span>, <span class="num">0</span>
+    ctx = torch.<span class="fn">enable_grad</span>() <span class="kw">if</span> train <span class="kw">else</span> torch.<span class="fn">no_grad</span>()
+    <span class="kw">with</span> ctx:
+        <span class="kw">for</span> imgs, lbls <span class="kw">in</span> loader:
+            imgs, lbls = imgs.<span class="fn">to</span>(device), lbls.<span class="fn">to</span>(device)
+            <span class="kw">if</span> train: opt.<span class="fn">zero_grad</span>()
+            out  = <span class="fn">model</span>(imgs)
+            loss = <span class="fn">crit</span>(out, lbls)
+            <span class="kw">if</span> train:
+                loss.<span class="fn">backward</span>()
+                nn.utils.<span class="fn">clip_grad_norm_</span>(
+                    model.<span class="fn">parameters</span>(), <span class="num">1.0</span>)
+                opt.<span class="fn">step</span>()
+            loss_sum += loss.<span class="fn">item</span>()
+            correct += (out.<span class="fn">argmax</span>(<span class="num">1</span>) == lbls).<span class="fn">sum</span>().<span class="fn">item</span>()
+    n = <span class="fn">len</span>(loader.dataset)
+    <span class="kw">return</span> loss_sum / <span class="fn">len</span>(loader), correct / n
+
+<span class="cm"># Fase 1 — 10 epochs (solo cabeza)</span>
+<span class="kw">for</span> ep <span class="kw">in</span> <span class="fn">range</span>(<span class="num">10</span>):
+    tr_l, tr_a = <span class="fn">run_epoch</span>(
+        model, train_dl, optimizer, criterion, <span class="nb">True</span>)
+    va_l, va_a = <span class="fn">run_epoch</span>(
+        model, val_dl, <span class="nb">None</span>, criterion, <span class="nb">False</span>)
+    scheduler.<span class="fn">step</span>()
+    <span class="nb">print</span>(<span class="fn">f</span><span class="st">"Ep{ep+1} train={tr_a:.3f} val={va_a:.3f}"</span>)
+
+<span class="cm"># ── FASE 2 ────────────────────────────</span>
+<span class="kw">for</span> layer <span class="kw">in</span> [model.layer3, model.layer4]:
+    <span class="kw">for</span> p <span class="kw">in</span> layer.<span class="fn">parameters</span>():
+        p.requires_grad = <span class="nb">True</span>
+
+optimizer2 = optim.<span class="fn">AdamW</span>([
+    {<span class="st">'params'</span>: model.layer3.<span class="fn">parameters</span>(), <span class="st">'lr'</span>:<span class="num">1e-5</span>},
+    {<span class="st">'params'</span>: model.layer4.<span class="fn">parameters</span>(), <span class="st">'lr'</span>:<span class="num">5e-5</span>},
+    {<span class="st">'params'</span>: model.fc.<span class="fn">parameters</span>(),     <span class="st">'lr'</span>:<span class="num">1e-4</span>},
+], weight_decay=<span class="num">1e-4</span>)
+
+best_acc, wait, patience = <span class="num">0</span>, <span class="num">0</span>, <span class="num">5</span>
+<span class="kw">for</span> ep <span class="kw">in</span> <span class="fn">range</span>(<span class="num">30</span>):
+    <span class="fn">run_epoch</span>(model, train_dl, optimizer2, criterion, <span class="nb">True</span>)
+    _, va_a = <span class="fn">run_epoch</span>(
+        model, val_dl, <span class="nb">None</span>, criterion, <span class="nb">False</span>)
+    <span class="kw">if</span> va_a > best_acc:
+        best_acc = va_a
+        torch.<span class="fn">save</span>(model.state_dict(), <span class="st">'best.pth'</span>)
+        wait = <span class="num">0</span>
+    <span class="kw">else</span>:
+        wait += <span class="num">1</span>
+    <span class="kw">if</span> wait >= patience:
+        <span class="nb">print</span>(<span class="st">"Early stop"</span>); <span class="kw">break</span></pre>
+    </div>
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-keras">Keras / TF</span><span class="code-title">model.compile + fit — 2 fases + callbacks</span></div>
+<pre><span class="kw">from</span> tensorflow <span class="kw">import</span> keras
+
+<span class="cm"># ── FASE 1: backbone congelado ────────</span>
+model.<span class="fn">compile</span>(
+    optimizer=keras.optimizers.<span class="fn">Adam</span>(<span class="num">1e-3</span>),
+    loss=<span class="st">'sparse_categorical_crossentropy'</span>,
+    metrics=[<span class="st">'accuracy'</span>]
+)
+
+cb_fase1 = [
+    keras.callbacks.<span class="fn">ModelCheckpoint</span>(
+        <span class="st">'best_fase1.keras'</span>,
+        monitor=<span class="st">'val_accuracy'</span>,
+        save_best_only=<span class="nb">True</span>
+    ),
+    keras.callbacks.<span class="fn">EarlyStopping</span>(
+        monitor=<span class="st">'val_loss'</span>,
+        patience=<span class="num">5</span>,
+        restore_best_weights=<span class="nb">True</span>
+    ),
+]
+
+h1 = model.<span class="fn">fit</span>(
+    train_ds, epochs=<span class="num">15</span>,
+    validation_data=val_ds,
+    callbacks=cb_fase1
+)
+
+<span class="cm"># ── FASE 2: descongelar últimas 50 capas</span>
+base_model.trainable = <span class="nb">True</span>
+<span class="kw">for</span> layer <span class="kw">in</span> base_model.layers[:<span class="num">-50</span>]:
+    layer.trainable = <span class="nb">False</span>
+
+<span class="cm"># Recompilar — siempre después de cambiar trainable</span>
+model.<span class="fn">compile</span>(
+    optimizer=keras.optimizers.<span class="fn">Adam</span>(<span class="num">1e-5</span>),
+    loss=<span class="st">'sparse_categorical_crossentropy'</span>,
+    metrics=[<span class="st">'accuracy'</span>]
+)
+
+cb_fase2 = [
+    keras.callbacks.<span class="fn">ReduceLROnPlateau</span>(
+        monitor=<span class="st">'val_loss'</span>,
+        factor=<span class="num">0.5</span>, patience=<span class="num">3</span>,
+        min_lr=<span class="num">1e-7</span>, verbose=<span class="num">1</span>
+    ),
+    keras.callbacks.<span class="fn">EarlyStopping</span>(
+        monitor=<span class="st">'val_loss'</span>, patience=<span class="num">8</span>,
+        restore_best_weights=<span class="nb">True</span>
+    ),
+    keras.callbacks.<span class="fn">ModelCheckpoint</span>(
+        <span class="st">'best_ft.keras'</span>,
+        monitor=<span class="st">'val_accuracy'</span>,
+        save_best_only=<span class="nb">True</span>
+    ),
+]
+
+h2 = model.<span class="fn">fit</span>(
+    train_ds, epochs=<span class="num">40</span>,
+    validation_data=val_ds,
+    callbacks=cb_fase2
+)</pre>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════ 06 EVALUACIÓN ══════════ -->
+<div class="panel" id="panel-eval">
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="step-num">// Etapa 06</div>
+      <div class="step-name">Evaluación</div>
+      <div class="step-sub">Accuracy · Loss · Matriz de confusión · Classification report · TTA</div>
+    </div>
+    <span class="badge badge-gold">Step 06</span>
+  </div>
+  <div class="steps-nav">
+    <span class="step-pill">01 Datos</span><span class="step-pill">02 Preproceso</span>
+    <span class="step-pill">03 Augment</span><span class="step-pill">04 Modelo</span>
+    <span class="step-pill">05 Fine-tuning</span><span class="step-pill cur">06 Eval</span>
+  </div>
+  <div class="explain-section">
+    <h3>// Métricas y cuándo usarlas</h3>
+    <div class="explain-text">
+      La <strong>accuracy</strong> es intuitiva pero engañosa con datasets desbalanceados. Con 95% de imágenes de clase A, un modelo trivial tiene 95% de accuracy. Usa siempre <em>F1-score por clase</em> y la <strong>matriz de confusión</strong> para entender qué clases se confunden.<br><br>
+      La evaluación final siempre sobre el <em>conjunto de test</em> (no val). El conjunto de val solo se usa durante el diseño para seleccionar hiperparámetros.
+    </div>
+
+    <table class="metrics-table">
+      <thead><tr><th>Métrica</th><th>Fórmula</th><th>Cuándo usar</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Accuracy</strong></td><td>TP+TN / Total</td><td>Dataset perfectamente balanceado</td></tr>
+        <tr><td><strong>Precision</strong></td><td>TP / (TP+FP)</td><td>Falsos positivos son costosos (spam)</td></tr>
+        <tr><td><strong>Recall</strong></td><td>TP / (TP+FN)</td><td>Falsos negativos son costosos (medicina)</td></tr>
+        <tr><td><strong>F1-Score</strong></td><td>2·P·R / (P+R)</td><td>Balance P/R — datasets desbalanceados</td></tr>
+        <tr><td><strong>Macro F1</strong></td><td>Media F1 por clase</td><td>Todas las clases igual de importantes</td></tr>
+        <tr><td><strong>Weighted F1</strong></td><td>F1 ponderado por soporte</td><td>Clases con diferente número de ejemplos</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tag-list">
+      <span class="tag hl">Confusion Matrix</span>
+      <span class="tag hl">Classification Report</span>
+      <span class="tag">sklearn.metrics</span>
+      <span class="tag">torchmetrics</span>
+      <span class="tag">TTA (Test-Time Augmentation)</span>
+      <span class="tag">curvas train/val</span>
+    </div>
+  </div>
+  <div class="code-dual">
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-pytorch">PyTorch</span><span class="code-title">Evaluación completa — métricas + matriz de confusión</span></div>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> (
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay
+)
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+<span class="cm"># Cargar el MEJOR modelo guardado</span>
+model.<span class="fn">load_state_dict</span>(
+    torch.<span class="fn">load</span>(<span class="st">'best.pth'</span>, map_location=device)
+)
+model.<span class="fn">eval</span>()
+
+all_preds, all_labels = [], []
+<span class="kw">with</span> torch.<span class="fn">no_grad</span>():
+    <span class="kw">for</span> imgs, labels <span class="kw">in</span> test_dl:
+        imgs = imgs.<span class="fn">to</span>(device)
+        out  = <span class="fn">model</span>(imgs)
+        preds = out.<span class="fn">argmax</span>(dim=<span class="num">1</span>).<span class="fn">cpu</span>().<span class="fn">numpy</span>()
+        all_preds.<span class="fn">extend</span>(preds)
+        all_labels.<span class="fn">extend</span>(labels.<span class="fn">numpy</span>())
+
+all_preds  = np.<span class="fn">array</span>(all_preds)
+all_labels = np.<span class="fn">array</span>(all_labels)
+acc = (all_preds == all_labels).<span class="fn">mean</span>()
+<span class="nb">print</span>(<span class="fn">f</span><span class="st">"Test Accuracy: {acc:.4f}"</span>)
+
+<span class="cm"># Reporte completo por clase</span>
+<span class="nb">print</span>(<span class="fn">classification_report</span>(
+    all_labels, all_preds,
+    target_names=test_ds.classes
+))
+
+<span class="cm"># Matriz de confusión</span>
+cm = <span class="fn">confusion_matrix</span>(all_labels, all_preds)
+disp = <span class="fn">ConfusionMatrixDisplay</span>(
+    cm, display_labels=test_ds.classes
+)
+fig, ax = plt.<span class="fn">subplots</span>(figsize=(<span class="num">8</span>,<span class="num">8</span>))
+disp.<span class="fn">plot</span>(ax=ax, cmap=<span class="st">'Blues'</span>,
+          xticks_rotation=<span class="st">'vertical'</span>)
+plt.<span class="fn">tight_layout</span>()
+plt.<span class="fn">savefig</span>(<span class="st">'confusion_matrix.png'</span>, dpi=<span class="num">150</span>)
+
+<span class="cm"># Test-Time Augmentation (TTA)</span>
+<span class="cm"># Promedia N predicciones con crops/flips</span>
+<span class="kw">def</span> <span class="fn">tta_predict</span>(model, img, n=<span class="num">5</span>):
+    aug = transforms.<span class="fn">Compose</span>([
+        transforms.<span class="fn">RandomCrop</span>(<span class="num">224</span>),
+        transforms.<span class="fn">RandomHorizontalFlip</span>()
+    ])
+    preds = [torch.<span class="fn">softmax</span>(
+        <span class="fn">model</span>(<span class="fn">aug</span>(img).<span class="fn">unsqueeze</span>(<span class="num">0</span>).<span class="fn">to</span>(device)),
+        dim=<span class="num">1</span>) <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+    <span class="kw">return</span> torch.<span class="fn">stack</span>(preds).<span class="fn">mean</span>(<span class="num">0</span>)</pre>
+    </div>
+    <div>
+      <div class="code-framework"><span class="fw-badge fw-keras">Keras / TF</span><span class="code-title">evaluate + sklearn + curvas de entrenamiento</span></div>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> (
+    classification_report, confusion_matrix,
+    ConfusionMatrixDisplay
+)
+
+<span class="cm"># Evaluación rápida con Keras</span>
+test_loss, test_acc = model.<span class="fn">evaluate</span>(test_ds, verbose=<span class="num">0</span>)
+<span class="nb">print</span>(<span class="fn">f</span><span class="st">"Test Loss:     {test_loss:.4f}"</span>)
+<span class="nb">print</span>(<span class="fn">f</span><span class="st">"Test Accuracy: {test_acc:.4f}"</span>)
+
+<span class="cm"># Predicciones para sklearn</span>
+all_preds, all_labels = [], []
+<span class="kw">for</span> imgs, labels <span class="kw">in</span> test_ds:
+    probs = model.<span class="fn">predict</span>(imgs, verbose=<span class="num">0</span>)
+    all_preds.<span class="fn">extend</span>(np.<span class="fn">argmax</span>(probs, axis=<span class="num">1</span>))
+    all_labels.<span class="fn">extend</span>(labels.<span class="fn">numpy</span>())
+
+all_preds  = np.<span class="fn">array</span>(all_preds)
+all_labels = np.<span class="fn">array</span>(all_labels)
+class_names = train_ds.class_names
+
+<span class="cm"># Classification report</span>
+<span class="nb">print</span>(<span class="fn">classification_report</span>(
+    all_labels, all_preds,
+    target_names=class_names
+))
+
+<span class="cm"># Matriz de confusión</span>
+cm = <span class="fn">confusion_matrix</span>(all_labels, all_preds)
+disp = <span class="fn">ConfusionMatrixDisplay</span>(
+    cm, display_labels=class_names
+)
+fig, ax = plt.<span class="fn">subplots</span>(figsize=(<span class="num">8</span>,<span class="num">8</span>))
+disp.<span class="fn">plot</span>(ax=ax, cmap=<span class="st">'Blues'</span>,
+          xticks_rotation=<span class="st">'vertical'</span>)
+plt.<span class="fn">tight_layout</span>()
+plt.<span class="fn">savefig</span>(<span class="st">'confusion_matrix.png'</span>, dpi=<span class="num">150</span>)
+
+<span class="cm"># Curvas de entrenamiento</span>
+fig, axes = plt.<span class="fn">subplots</span>(<span class="num">1</span>, <span class="num">2</span>, figsize=(<span class="num">12</span>,<span class="num">4</span>))
+<span class="kw">for</span> ax, key <span class="kw">in</span> <span class="fn">zip</span>(axes, [<span class="st">'accuracy'</span>, <span class="st">'loss'</span>]):
+    <span class="kw">for</span> h <span class="kw">in</span> [h1, h2]:
+        ax.<span class="fn">plot</span>(h.history[key], label=<span class="st">f'train'</span>)
+        ax.<span class="fn">plot</span>(h.history[<span class="st">f'val_{key}'</span>],
+                label=<span class="st">f'val'</span>, linestyle=<span class="st">'--'</span>)
+    ax.<span class="fn">set_title</span>(key); ax.<span class="fn">legend</span>()
+plt.<span class="fn">tight_layout</span>()
+plt.<span class="fn">savefig</span>(<span class="st">'training_curves.png'</span>, dpi=<span class="num">150</span>)</pre>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+</div><!-- /content-area -->
+</div><!-- /app-shell -->
+
+<script>
+const TABS = ['overview','datos','prepro','augment','modelo','finetune','eval'];
+
+function activateTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab)
+  );
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  const tab = btn.dataset.tab;
+  activateTab(tab);
+  document.querySelectorAll('#tabs-mobile .tab-btn').forEach(b => {
+    if (b.dataset.tab === tab)
+      b.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+  });
+});
+
+document.addEventListener('keydown', function(e) {
+  if (!['ArrowRight','ArrowLeft','ArrowDown','ArrowUp'].includes(e.key)) return;
+  const active = document.querySelector('.panel.active');
+  if (!active) return;
+  const cur  = active.id.replace('panel-', '');
+  const idx  = TABS.indexOf(cur);
+  const next = (e.key === 'ArrowRight' || e.key === 'ArrowDown')
+    ? TABS[Math.min(idx + 1, TABS.length - 1)]
+    : TABS[Math.max(idx - 1, 0)];
+  activateTab(next);
+});
+
+/* ── THEME TOGGLE ── */
+(function(){
+  const stored = localStorage.getItem('pipeline-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = stored ? stored === 'dark' : prefersDark;
+  if (!isDark) {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('theme-icon').textContent  = '🌙';
+    document.getElementById('theme-label').textContent = 'Modo oscuro';
+  }
+})();
+
+function toggleTheme() {
+  const root    = document.documentElement;
+  const isLight = root.getAttribute('data-theme') === 'light';
+  if (isLight) {
+    root.removeAttribute('data-theme');
+    document.getElementById('theme-icon').textContent  = '☀️';
+    document.getElementById('theme-label').textContent = 'Modo claro';
+    localStorage.setItem('pipeline-theme', 'dark');
+  } else {
+    root.setAttribute('data-theme', 'light');
+    document.getElementById('theme-icon').textContent  = '🌙';
+    document.getElementById('theme-label').textContent = 'Modo oscuro';
+    localStorage.setItem('pipeline-theme', 'light');
+  }
+}
+</script>
+</body>
+</html>
