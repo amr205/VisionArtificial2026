@@ -12,6 +12,7 @@
     --bg: #0a0a0f;
     --surface: #12121a;
     --surface2: #1a1a26;
+    --surface3: #0d0d15;
     --border: #252535;
     --accent: #6ee7f7;
     --accent2: #f7c86e;
@@ -20,6 +21,23 @@
     --muted: #7070a0;
     --mono: 'Space Mono', monospace;
     --sans: 'Syne', sans-serif;
+    --shadow: rgba(0,0,0,0.4);
+    --lb-bg: rgba(5,5,10,0.93);
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface2: #eef0f5;
+    --surface3: #f0f1f6;
+    --border: #d0d4e0;
+    --accent: #0a8fa3;
+    --accent2: #b07a00;
+    --accent3: #7a36c9;
+    --text: #1a1a2e;
+    --muted: #5a5a80;
+    --shadow: rgba(0,0,0,0.10);
+    --lb-bg: rgba(240,241,246,0.96);
   }
 
   body {
@@ -345,7 +363,7 @@
 
   /* FORMULA BAR */
   .formula-bar {
-    background: #0d0d15;
+    background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 3px;
     padding: 0.9rem 1rem;
@@ -414,7 +432,7 @@
   }
   @media (max-width: 620px) { .vis-row { grid-template-columns: 1fr; } }
   .vis-card {
-    background: #0d0d15;
+    background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 3px;
     padding: 0.75rem;
@@ -462,7 +480,7 @@
     margin-bottom: 0.75rem;
   }
   pre {
-    background: #0d0d15;
+    background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 3px;
     padding: 1rem;
@@ -470,14 +488,15 @@
     font-family: var(--mono);
     font-size: 0.75rem;
     line-height: 1.7;
-    color: #c8c8e8;
+    color: var(--text);
     flex: 1;
   }
-  .kw { color: #f7c86e; }
-  .fn { color: #6ee7f7; }
-  .st { color: #b06ef7; }
-  .cm { color: #505070; font-style: italic; }
+  .kw { color: var(--accent2); }
+  .fn { color: var(--accent); }
+  .st { color: var(--accent3); }
+  .cm { color: var(--muted); font-style: italic; }
   .nb { color: #f7a06e; }
+  :root[data-theme="light"] .nb { color: #c06000; }
   #code-live { min-height: 220px; }
 
   /* DETAILS ACCORDION */
@@ -527,12 +546,139 @@
   .novelty-box strong { color: var(--accent); }
   .details-section { margin-top: auto; }
 
-  /* INVALID MSG */
+  /* THEME TOGGLE */
+  #theme-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.4em 0.9em;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  #theme-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(110,231,247,0.06);
+  }
+  :root[data-theme="light"] #theme-toggle:hover {
+    background: rgba(10,143,163,0.06);
+  }
+  .theme-icon { font-size: 0.85rem; }
+
+  /* ANIMATED AI SECTION */
+  .animated-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .animated-section .card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .anim-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+  .anim-card {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s;
+  }
+  .anim-card:hover { border-color: var(--accent); }
+  .anim-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    display: block;
+  }
+  .anim-card-body {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+  }
+  .anim-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .anim-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .anim-desc {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .anim-credit {
+    padding: 0.75rem 1.5rem 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .anim-credit-text {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+  .anim-credit-text a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .anim-credit-text a:hover { text-decoration: underline; }
+
+  /* RESPONSIVE IMPROVEMENTS */
+  @media (max-width: 480px) {
+    header { padding: 1.5rem 1rem 1.5rem; }
+    h1 { font-size: 1.5rem; }
+    .header-meta { gap: 0.4rem; }
+    .badge { font-size: 0.6rem; padding: 0.25em 0.6em; }
+    .content-area { padding: 1rem 0.75rem; }
+    .anim-grid { grid-template-columns: 1fr; padding: 1rem; }
+    .controls-grid { grid-template-columns: 1fr 1fr; }
+    .vis-row { grid-template-columns: 1fr; }
+    #vis-row-main > div:not(:first-child) { display: none; }
+  }
+  @media (min-width: 481px) and (max-width: 860px) {
+    .controls-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 860px) {
+    .anim-card img { height: 140px; }
+  }
+
   .invalid-msg { font-family: var(--mono); font-size: 0.72rem; color: #f76e6e; padding: 0.5rem 0; }
 
   /* DIAGRAM SVG */
   .diagram-svg-wrap {
-    background: #0d0d15;
+    background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 3px;
     padding: 1.25rem;
@@ -563,7 +709,7 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: rgba(5,5,10,0.93);
+    background: var(--lb-bg);
     backdrop-filter: blur(8px);
     align-items: center;
     justify-content: center;
@@ -573,7 +719,7 @@
   #lightbox-inner {
     position: relative;
     width: 92vw; max-width: 1600px; height: 88vh;
-    background: #0d0d15;
+    background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 6px;
     display: flex; flex-direction: column;
@@ -646,6 +792,10 @@
     <span class="badge badge-cyan">7 Parámetros</span>
     <span class="badge badge-gold">Interactivo</span>
     <span class="badge badge-purple">PyTorch</span>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+      <span class="theme-icon" id="theme-icon">☀️</span>
+      <span id="theme-label">Modo claro</span>
+    </button>
   </div>
 </header>
 
@@ -660,6 +810,7 @@
       <button class="tab-btn" data-tab="stride"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">→</div><div class="tab-name">Stride</div></div></button>
       <button class="tab-btn" data-tab="dilation"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⟺</div><div class="tab-name">Dilatación</div></div></button>
       <button class="tab-btn" data-tab="canales"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⊞</div><div class="tab-name">Canales</div></div></button>
+      <button class="tab-btn" data-tab="animaciones"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">▶</div><div class="tab-name">Animaciones</div></div></button>
     </div>
   </div>
   <div class="scroll-hint">← scroll →</div>
@@ -677,6 +828,7 @@
         <button class="tab-btn" data-tab="stride"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">→ stride</div><div class="tab-name">Paso</div></div></button>
         <button class="tab-btn" data-tab="dilation"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⟺ dilation</div><div class="tab-name">Dilatación</div></div></button>
         <button class="tab-btn" data-tab="canales"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">⊞ channels</div><div class="tab-name">Canales E/S</div></div></button>
+        <button class="tab-btn" data-tab="animaciones"><div class="tab-dot"></div><div class="tab-text"><div class="tab-icon">▶ animated</div><div class="tab-name">Animaciones</div></div></button>
       </div>
     </div>
   </nav>
@@ -1603,8 +1755,97 @@ conv3 = nn.<span class="fn">Conv2d</span>(<span class="st">128</span>, <span cla
       </div>
     </div><!-- /panel-canales -->
 
-  </div>
-  </div><!-- /content-area -->
+    <!-- ══════════════════════════════════════ ANIMACIONES ══ -->
+    <div class="panel" id="panel-animaciones">
+      <div class="animated-section">
+        <div class="card-header">
+          <div>
+            <div class="arch-year">// Visualizaciones externas</div>
+            <div class="arch-name">Animaciones de Convolución</div>
+            <div class="arch-sub">GIFs animados que ilustran el proceso de convolución paso a paso</div>
+          </div>
+          <span class="badge badge-cyan">MIT License</span>
+        </div>
+
+        <div class="anim-grid">
+          <!-- Basic convolution -->
+          <div class="anim-card">
+            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel.gif"
+                 alt="Convolución básica con kernel 3×3" loading="lazy">
+            <div class="anim-card-body">
+              <div class="anim-label">// Algoritmo base</div>
+              <div class="anim-title">Convolución con kernel 3×3</div>
+              <div class="anim-desc">El kernel se desliza sobre la entrada calculando productos punto a punto. Sin padding, sin stride especial.</div>
+            </div>
+          </div>
+
+          <!-- Padding: no padding -->
+          <div class="anim-card">
+            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel.gif"
+                 alt="Sin padding (Valid)" loading="lazy">
+            <div class="anim-card-body">
+              <div class="anim-label">// Padding = 0</div>
+              <div class="anim-title">Sin Padding — "Valid"</div>
+              <div class="anim-desc">Sin relleno, la salida es más pequeña que la entrada. Salida = H − k + 1.</div>
+            </div>
+          </div>
+
+          <!-- Padding: same -->
+          <div class="anim-card">
+            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel-padding.gif"
+                 alt="Padding Same [1,1,1,1]" loading="lazy">
+            <div class="anim-card-body">
+              <div class="anim-label">// Padding = 1</div>
+              <div class="anim-title">Padding [1,1,1,1] — "Same"</div>
+              <div class="anim-desc">Se añaden ceros alrededor. Con k=3 y p=1 la salida conserva el tamaño de la entrada.</div>
+            </div>
+          </div>
+
+          <!-- Stride 2 no padding -->
+          <div class="anim-card">
+            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel-stride-2.gif"
+                 alt="Stride 2 sin padding" loading="lazy">
+            <div class="anim-card-body">
+              <div class="anim-label">// Stride = 2, Padding = 0</div>
+              <div class="anim-title">Stride 2 — Sin Padding</div>
+              <div class="anim-desc">El kernel salta 2 píxeles en cada paso. La resolución espacial se reduce a la mitad.</div>
+            </div>
+          </div>
+
+          <!-- Stride 2 with padding -->
+          <div class="anim-card">
+            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel-stride-2-padding.gif"
+                 alt="Stride 2 con padding Same" loading="lazy">
+            <div class="anim-card-body">
+              <div class="anim-label">// Stride = 2, Padding = 1</div>
+              <div class="anim-title">Stride 2 — Padding "Same"</div>
+              <div class="anim-desc">Combina stride 2 con padding para submuestrear preservando los bordes de la imagen.</div>
+            </div>
+          </div>
+
+          <!-- Groups / Depthwise -->
+          <div class="anim-card">
+            <img src="https://animatedai.github.io/media/depthwise-convolution-animation-3x3-kernel.gif"
+                 alt="Convolución Depthwise" loading="lazy">
+            <div class="anim-card-body">
+              <div class="anim-label">// groups = Cin</div>
+              <div class="anim-title">Convolución Depthwise</div>
+              <div class="anim-desc">Cada canal de entrada se convoluciona con su propio filtro independiente. Menos parámetros.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="anim-credit">
+          <span class="badge badge-cyan">MIT License</span>
+          <span class="anim-credit-text">
+            Animaciones por <a href="https://animatedai.github.io/" target="_blank" rel="noopener">AnimatedAI (animatedai.github.io)</a> —
+            Licenciadas bajo la <a href="https://github.com/animatedai/animatedai.github.io/blob/main/LICENSE" target="_blank" rel="noopener">Licencia MIT</a>.
+            Imágenes utilizadas con permiso de la licencia. Canal de YouTube:
+            <a href="https://www.youtube.com/channel/UC5bSCGdcE9x9ffqqgJlGp5Q" target="_blank" rel="noopener">Animated AI</a>.
+          </span>
+        </div>
+      </div>
+    </div><!-- /panel-animaciones -->
 </div><!-- /app-shell -->
 
 <script>
@@ -1647,7 +1888,7 @@ function render() {
     ba.appendChild(b2);
     const b3=document.createElement('span');
     b3.className='res-badge';
-    b3.style.cssText='background:rgba(176,110,247,0.1);color:#b06ef7;border-color:rgba(176,110,247,0.3)';
+    b3.style.cssText='background:rgba(176,110,247,0.1);color:var(--accent3);border-color:rgba(176,110,247,0.3)';
     b3.textContent=`params: ${(Cout*Cin*k*k+Cout).toLocaleString()}`;
     ba.appendChild(b3);
   }
@@ -1688,15 +1929,23 @@ function updateSteps(out){
 }
 
 function cellColor(type){
-  const dark=window.matchMedia('(prefers-color-scheme:dark)').matches;
-  const t={
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const t = isLight ? {
+    input:    {fill:'rgba(10,143,163,0.1)',   stroke:'#0a8fa3'},
+    pad:      {fill:'rgba(140,140,170,0.18)', stroke:'#9090b0'},
+    kernel:   {fill:'rgba(176,122,0,0.35)',   stroke:'#b07a00'},
+    dil:      {fill:'rgba(122,54,201,0.2)',   stroke:'#7a36c9'},
+    outfill:  {fill:'rgba(10,143,163,0.45)',  stroke:'#0a8fa3'},
+    outprev:  {fill:'rgba(10,143,163,0.15)',  stroke:'#0a8fa3'},
+    outblank: {fill:'rgba(140,140,170,0.08)', stroke:'#d0d4e0'},
+  } : {
     input:    {fill:'rgba(110,231,247,0.12)', stroke:'#6ee7f7'},
-    pad:      {fill:'rgba(80,80,112,0.2)',   stroke:'#505070'},
-    kernel:   {fill:'rgba(247,200,110,0.5)', stroke:'#f7c86e'},
-    dil:      {fill:'rgba(176,110,247,0.25)',stroke:'#b06ef7'},
-    outfill:  {fill:'rgba(110,231,247,0.5)', stroke:'#6ee7f7'},
-    outprev:  {fill:'rgba(110,231,247,0.18)',stroke:'#6ee7f7'},
-    outblank: {fill:'rgba(80,80,112,0.1)',   stroke:'#252535'},
+    pad:      {fill:'rgba(80,80,112,0.2)',    stroke:'#505070'},
+    kernel:   {fill:'rgba(247,200,110,0.5)',  stroke:'#f7c86e'},
+    dil:      {fill:'rgba(176,110,247,0.25)', stroke:'#b06ef7'},
+    outfill:  {fill:'rgba(110,231,247,0.5)',  stroke:'#6ee7f7'},
+    outprev:  {fill:'rgba(110,231,247,0.18)', stroke:'#6ee7f7'},
+    outblank: {fill:'rgba(80,80,112,0.1)',    stroke:'#252535'},
   };
   return t[type]||t.input;
 }
@@ -1829,46 +2078,52 @@ function drawTensor3D(out){
       ctx.roundRect(ox+dx,oy-dy,slabW,slabH,2);
       ctx.fill(); ctx.stroke();
     }
-    ctx.fillStyle='rgba(200,200,220,0.85)';
+    const isLight = document.documentElement.getAttribute('data-theme')==='light';
+    ctx.fillStyle = isLight ? 'rgba(26,26,46,0.85)' : 'rgba(200,200,220,0.85)';
     ctx.font='bold 9px monospace';
     ctx.textAlign='center';
     ctx.fillText(labelTop, ox+slabW/2+(shown>1?off:0), oy-(shown>1?off+3:3));
     ctx.font='9px monospace';
-    ctx.fillStyle='rgba(112,112,160,0.9)';
+    ctx.fillStyle = isLight ? 'rgba(90,90,128,0.9)' : 'rgba(112,112,160,0.9)';
     ctx.fillText(labelSide, ox-18, oy+slabH/2);
   };
 
+  const isLight = document.documentElement.getAttribute('data-theme')==='light';
+  const mutedColor = isLight ? '#5a5a80' : '#505070';
   const slabW=Math.min(70, Math.floor(W*0.18));
   const slabH=Math.min(55, slabW*0.8);
   const spacing=Math.floor(W/5);
 
   // Input tensor
   drawVolume(20, 75, slabW, slabH, Cin,
-    'rgba(110,231,247,A)', '#6ee7f7',
+    isLight?'rgba(10,143,163,A)':'rgba(110,231,247,A)',
+    isLight?'#0a8fa3':'#6ee7f7',
     `${Cin}×${H}×${H}`, `Cin=${Cin}`);
 
   // Arrow *
-  ctx.fillStyle='#505070'; ctx.font='18px monospace'; ctx.textAlign='center';
+  ctx.fillStyle=mutedColor; ctx.font='18px monospace'; ctx.textAlign='center';
   ctx.fillText('*', 20+slabW+spacing*0.35, 52);
-  ctx.font='8px monospace'; ctx.fillStyle='#505070';
+  ctx.font='8px monospace'; ctx.fillStyle=mutedColor;
   ctx.fillText('conv', 20+slabW+spacing*0.35, 64);
 
   // Weight tensor
   drawVolume(20+slabW+spacing*0.7, 75, slabW*0.7, slabH*0.7, Cout,
-    'rgba(176,110,247,A)', '#b06ef7',
+    isLight?'rgba(122,54,201,A)':'rgba(176,110,247,A)',
+    isLight?'#7a36c9':'#b06ef7',
     `${Cout}×${Cin}×${k}×${k}`, `Cout`);
 
   // Arrow =
-  ctx.fillStyle='#505070'; ctx.font='18px monospace';
+  ctx.fillStyle=mutedColor; ctx.font='18px monospace';
   ctx.fillText('=', 20+slabW+spacing*0.7+slabW*0.7+spacing*0.3, 52);
 
   // Output tensor
   drawVolume(20+slabW+spacing*0.7+slabW*0.7+spacing*0.6, 75, slabW, slabH, Cout,
-    'rgba(247,200,110,A)', '#f7c86e',
+    isLight?'rgba(176,122,0,A)':'rgba(247,200,110,A)',
+    isLight?'#b07a00':'#f7c86e',
     `${Cout}×${out}×${out}`, `Cout=${Cout}`);
 
   // Labels below
-  ctx.font='8px monospace'; ctx.fillStyle='rgba(112,112,160,0.8)'; ctx.textAlign='center';
+  ctx.font='8px monospace'; ctx.fillStyle=isLight?'rgba(90,90,128,0.8)':'rgba(112,112,160,0.8)'; ctx.textAlign='center';
   ctx.fillText('entrada', 20+slabW/2, 118);
   ctx.fillText('pesos', 20+slabW+spacing*0.7+slabW*0.35, 118);
   ctx.fillText('salida', 20+slabW+spacing*0.7+slabW*0.7+spacing*0.6+slabW/2, 118);
@@ -1884,17 +2139,17 @@ function updateWeightStats(out, ke, inv){
   const outShape=inv?'inválido':`(N, ${Cout}, ${out}, ${out})`;
 
   const rows=[
-    ['weight.shape', wShape,    '#b06ef7'],
-    ['bias.shape',   `(${Cout},)`, '#b06ef7'],
-    ['pesos (W)',    wParams.toLocaleString(), '#f7c86e'],
-    ['bias (b)',     bParams.toLocaleString(), '#6ee7f7'],
-    ['total params', total.toLocaleString(),  '#6ee7f7'],
-    ['x.shape',      inShape,   '#6ee7f7'],
-    ['y.shape',      outShape,  '#f7c86e'],
+    ['weight.shape', wShape,    'var(--accent3)'],
+    ['bias.shape',   `(${Cout},)`, 'var(--accent3)'],
+    ['pesos (W)',    wParams.toLocaleString(), 'var(--accent2)'],
+    ['bias (b)',     bParams.toLocaleString(), 'var(--accent)'],
+    ['total params', total.toLocaleString(),  'var(--accent)'],
+    ['x.shape',      inShape,   'var(--accent)'],
+    ['y.shape',      outShape,  'var(--accent2)'],
   ];
   const el=document.getElementById('weight-stats');
   el.innerHTML=rows.map(([label,val,col])=>
-    `<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid rgba(37,37,53,0.6);padding:3px 0;">
+    `<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--border);padding:3px 0;">
       <span style="color:var(--muted);font-size:0.6rem">${label}</span>
       <span style="color:${col};font-size:0.65rem;font-weight:700">${val}</span>
     </div>`
@@ -1934,7 +2189,7 @@ function toggleDetails(btn){
 }
 
 /* ── KEYBOARD NAVIGATION ── */
-const TABS=['explorer','kernel','padding','stride','dilation','canales'];
+const TABS=['explorer','kernel','padding','stride','dilation','canales','animaciones'];
 document.addEventListener('keydown',function(e){
   if(['ArrowRight','ArrowLeft','ArrowDown','ArrowUp'].includes(e.key)){
     const ap=document.querySelector('.panel.active');
@@ -2032,6 +2287,38 @@ document.addEventListener('keydown',function(e){
     if(e.key==='0') setScale(1);
   });
 })();
+
+/* ── THEME TOGGLE ── */
+(function(){
+  // Detect system preference on first load
+  const stored = localStorage.getItem('conv-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = stored ? stored === 'dark' : prefersDark;
+  if (!isDark) {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('theme-icon').textContent = '🌙';
+    document.getElementById('theme-label').textContent = 'Modo oscuro';
+  }
+})();
+
+function toggleTheme(){
+  const root = document.documentElement;
+  const isLight = root.getAttribute('data-theme') === 'light';
+  if (isLight) {
+    root.removeAttribute('data-theme');
+    document.getElementById('theme-icon').textContent = '☀️';
+    document.getElementById('theme-label').textContent = 'Modo claro';
+    localStorage.setItem('conv-theme', 'dark');
+  } else {
+    root.setAttribute('data-theme', 'light');
+    document.getElementById('theme-icon').textContent = '🌙';
+    document.getElementById('theme-label').textContent = 'Modo oscuro';
+    localStorage.setItem('conv-theme', 'light');
+  }
+  // Redraw canvases after theme change
+  render();
+}
+
 </script>
 </body>
 </html>
