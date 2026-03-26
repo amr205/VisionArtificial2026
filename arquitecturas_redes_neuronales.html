@@ -12,6 +12,7 @@
     --bg: #0a0a0f;
     --surface: #12121a;
     --surface2: #1a1a26;
+    --surface3: #0d0d15;
     --border: #252535;
     --accent: #6ee7f7;
     --accent2: #f7c86e;
@@ -20,6 +21,21 @@
     --muted: #7070a0;
     --mono: 'Space Mono', monospace;
     --sans: 'Syne', sans-serif;
+    --lb-bg: rgba(5,5,10,0.93);
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface2: #eef0f5;
+    --surface3: #f0f1f6;
+    --border: #d0d4e0;
+    --accent: #0a8fa3;
+    --accent2: #b07a00;
+    --accent3: #7a36c9;
+    --text: #1a1a2e;
+    --muted: #5a5a80;
+    --lb-bg: rgba(240,241,246,0.96);
   }
 
   body {
@@ -362,7 +378,7 @@
     margin-bottom: 1rem;
   }
   .diagram-svg-wrap {
-    background: #0d0d15;
+    background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 3px;
     padding: 1.25rem;
@@ -386,7 +402,7 @@
     margin-bottom: 0.75rem;
   }
   pre {
-    background: #0d0d15;
+    background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 3px;
     padding: 1rem;
@@ -394,14 +410,15 @@
     font-family: var(--mono);
     font-size: 0.75rem;
     line-height: 1.7;
-    color: #c8c8e8;
+    color: var(--text);
     flex: 1;
   }
-  .kw  { color: #f7c86e; }
-  .fn  { color: #6ee7f7; }
-  .st  { color: #b06ef7; }
-  .cm  { color: #505070; font-style: italic; }
+  .kw  { color: var(--accent2); }
+  .fn  { color: var(--accent); }
+  .st  { color: var(--accent3); }
+  .cm  { color: var(--muted); font-style: italic; }
   .nb  { color: #f7a06e; }
+  :root[data-theme="light"] .nb { color: #c06000; }
 
   /* DETAILS ACCORDION */
   .details-section { border-top: 1px solid var(--border); }
@@ -507,7 +524,7 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: rgba(5,5,10,0.93);
+    background: var(--lb-bg);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     align-items: center;
@@ -524,7 +541,7 @@
     width: 92vw;
     max-width: 1600px;
     height: 88vh;
-    background: #0d0d15;
+    background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 6px;
     display: flex;
@@ -607,6 +624,56 @@
     white-space: nowrap;
   }
 
+  /* THEME TOGGLE */
+  #theme-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.4em 0.9em;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    transition: border-color 0.2s, background 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MOBILENET VERSIONS TABLE */
+  .mv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    margin-top: 1rem;
+  }
+  .mv-table th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    text-align: left;
+    font-weight: 700;
+  }
+  .mv-table td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .mv-table tr:nth-child(even) td { background: var(--surface2); }
+  .mv-table .mv-version { color: var(--accent); font-weight: 700; white-space: nowrap; }
+  .mv-table .mv-year { color: var(--accent2); white-space: nowrap; }
+  .mv-table .mv-key { color: var(--accent3); }
+
 </style>
 </head>
 <body>
@@ -644,6 +711,10 @@
     <span class="badge badge-cyan">9 Arquitecturas</span>
     <span class="badge badge-gold">1989 → 2021</span>
     <span class="badge badge-purple">Deep Learning</span>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+      <span id="theme-icon">☀️</span>
+      <span id="theme-label">Modo claro</span>
+    </button>
   </div>
 </header>
 
@@ -1595,10 +1666,10 @@ model = <span class="fn">DenseNet121</span>(weights=<span class="st">'imagenet'<
     <div class="card">
       <div class="card-header">
         <div class="card-title-group">
-          <div class="arch-year">// 2017</div>
-          <div class="arch-name">MobileNet</div>
-          <div class="arch-author">Andrew G. Howard et al. — Google</div>
-          <div class="arch-venue">arXiv 2017 — "MobileNets: Efficient CNNs for Mobile Applications"</div>
+          <div class="arch-year">// 2017 · 2018 · 2019</div>
+          <div class="arch-name">MobileNet V1 · V2 · V3</div>
+          <div class="arch-author">Howard et al. / Sandler et al. / Howard et al. — Google</div>
+          <div class="arch-venue">arXiv 2017 / CVPR 2018 / ICCV 2019</div>
         </div>
         <span class="badge badge-purple">Edge / Mobile</span>
       </div>
@@ -1696,11 +1767,51 @@ model = <span class="fn">MobileNetV2</span>(weights=<span class="st">'imagenet'<
           <span class="arrow">›</span>
         </button>
         <div class="details-body">
-          <div class="detail-grid">
-            <div class="detail-item"><div class="detail-label">Parámetros (MobileNetV1)</div><div class="detail-val">~4.2M</div></div>
-            <div class="detail-item"><div class="detail-label">MobileNetV2</div><div class="detail-val">~3.4M (con residuales)</div></div>
-            <div class="detail-item"><div class="detail-label">Multiplicadores</div><div class="detail-val">Width (α) y Resolution (ρ)</div></div>
-            <div class="detail-item"><div class="detail-label">Residuales</div><div class="detail-val">✓ En V2 (Inverted Residuals)</div></div>
+
+          <!-- Versions comparison table -->
+          <table class="mv-table">
+            <thead>
+              <tr>
+                <th>Versión</th>
+                <th>Año</th>
+                <th>Innovación clave</th>
+                <th>Params</th>
+                <th>Top-1 ImageNet</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mv-version">V1</td>
+                <td class="mv-year">2017</td>
+                <td><span class="mv-key">Depthwise Separable Convolutions</span><br>
+                  Factoriza conv 3D estándar en depthwise (1 filtro/canal) + pointwise (1×1). Reduce MACs ~8–9×. Introduce multiplicadores α (width) y ρ (resolution) para ajustar el modelo al hardware disponible.</td>
+                <td>~4.2M</td>
+                <td>70.6%</td>
+              </tr>
+              <tr>
+                <td class="mv-version">V2</td>
+                <td class="mv-year">2018</td>
+                <td><span class="mv-key">Inverted Residuals + Linear Bottlenecks</span><br>
+                  Invierte la lógica ResNet: expande canales (×6) antes del depthwise, luego los comprime. La capa de proyección final es <em>lineal</em> (sin activación) para preservar información en espacios de baja dimensión. Skip connection solo cuando stride=1 y dims coinciden.</td>
+                <td>~3.4M</td>
+                <td>72.0%</td>
+              </tr>
+              <tr>
+                <td class="mv-version">V3</td>
+                <td class="mv-year">2019</td>
+                <td><span class="mv-key">NAS + Squeeze-and-Excitation + h-swish + Head mejorado</span><br>
+                  Arquitectura buscada con <em>Neural Architecture Search</em> (MnasNet). Añade bloques Squeeze-and-Excitation para reescalar canales por importancia. Reemplaza Swish por <em>h-swish</em> = x·ReLU6(x+3)/6, más eficiente en hardware. Simplifica la cabeza de clasificación eliminando capas costosas. Dos variantes: <em>Small</em> y <em>Large</em>.</td>
+                <td>~5.4M (Large)</td>
+                <td>75.2% (Large)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="detail-grid" style="margin-top:1.25rem">
+            <div class="detail-item"><div class="detail-label">Parámetros (V1)</div><div class="detail-val">~4.2M</div></div>
+            <div class="detail-item"><div class="detail-label">Parámetros (V2)</div><div class="detail-val">~3.4M (con residuales)</div></div>
+            <div class="detail-item"><div class="detail-label">Parámetros (V3-Large)</div><div class="detail-val">~5.4M</div></div>
+            <div class="detail-item"><div class="detail-label">Multiplicadores (V1/V2)</div><div class="detail-val">Width (α) y Resolution (ρ)</div></div>
             <div class="detail-item"><div class="detail-label">Objetivo</div><div class="detail-val">Dispositivos móviles / Edge</div></div>
             <div class="detail-item"><div class="detail-label">Reducción de MACs</div><div class="detail-val">~8-9× vs Conv estándar</div></div>
           </div>
@@ -1708,12 +1819,15 @@ model = <span class="fn">MobileNetV2</span>(weights=<span class="st">'imagenet'<
             <span class="tag highlight">Depthwise Separable Conv</span>
             <span class="tag">Pointwise Conv</span>
             <span class="tag highlight">Inverted Residuals (V2)</span>
-            <span class="tag">Squeeze-and-Excite (V3)</span>
+            <span class="tag highlight">NAS (V3)</span>
+            <span class="tag">Squeeze-and-Excitation (V3)</span>
+            <span class="tag">h-swish (V3)</span>
             <span class="tag">Width Multiplier</span>
+            <span class="tag">Linear Bottleneck</span>
           </div>
           <div class="novelty-box">
             <strong>¿Qué la hizo revolucionaria?</strong><br>
-            Redefinió el trade-off precisión/eficiencia para dispositivos con recursos limitados. La <em>depthwise separable convolution</em> aplica primero un filtro por canal (depthwise), luego combina canales con Conv 1×1 (pointwise), logrando el mismo efecto con 8-9× menos operaciones. MobileNetV2 añadió <em>inverted residuals</em> con bottlenecks lineales.
+            Redefinió el trade-off precisión/eficiencia para dispositivos con recursos limitados. V1 introdujo las <em>depthwise separable convolutions</em> logrando 8–9× menos operaciones. V2 resolvió la degradación de información con <em>inverted residuals</em> y bottlenecks lineales. V3 cerró la brecha de precisión con redes grandes usando NAS y bloques de atención de canal (SE), convirtiéndose en el estándar de facto para inferencia en el borde.
           </div>
         </div>
       </div>
@@ -2245,6 +2359,34 @@ model = ViTForImageClassification.<span class="fn">from_pretrained</span>(
       activateTab(next);
     }
   });
+
+  /* ── THEME TOGGLE ── */
+  (function(){
+    const stored = localStorage.getItem('arch-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = stored ? stored === 'dark' : prefersDark;
+    if (!isDark) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.getElementById('theme-icon').textContent = '🌙';
+      document.getElementById('theme-label').textContent = 'Modo oscuro';
+    }
+  })();
+
+  function toggleTheme() {
+    const root = document.documentElement;
+    const isLight = root.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      root.removeAttribute('data-theme');
+      document.getElementById('theme-icon').textContent = '☀️';
+      document.getElementById('theme-label').textContent = 'Modo claro';
+      localStorage.setItem('arch-theme', 'dark');
+    } else {
+      root.setAttribute('data-theme', 'light');
+      document.getElementById('theme-icon').textContent = '🌙';
+      document.getElementById('theme-label').textContent = 'Modo oscuro';
+      localStorage.setItem('arch-theme', 'light');
+    }
+  }
 </script>
 </body>
 </html>
