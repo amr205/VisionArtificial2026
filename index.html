@@ -22,6 +22,41 @@
     --sans: 'Syne', sans-serif;
   }
 
+  :root[data-theme="light"] {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface2: #eef0f5;
+    --border: #d0d4e0;
+    --accent: #0a8fa3;
+    --accent2: #b07a00;
+    --accent3: #7a36c9;
+    --text: #1a1a2e;
+    --muted: #5a5a80;
+  }
+
+  /* ── THEME TOGGLE ── */
+  #theme-toggle {
+    position: absolute;
+    top: 1.5rem;
+    right: 2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.4em 0.9em;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    transition: border-color 0.2s, background 0.2s;
+    white-space: nowrap;
+    z-index: 10;
+  }
+  #theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  @media (max-width: 600px) { #theme-toggle { top: 1rem; right: 1rem; } }
+
   body {
     background: var(--bg);
     color: var(--text);
@@ -320,6 +355,10 @@
 <!-- ════════════════════════════════════════ -->
 
 <header>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+    <span id="theme-icon">☀️</span>
+    <span id="theme-label">Modo claro</span>
+  </button>
   <div class="header-label" id="header-label">// GitHub Pages · File Index</div>
   <h1 id="page-title">Loading<span>...</span></h1>
   <p class="header-sub" id="page-sub"></p>
@@ -538,6 +577,34 @@
   }
 
   init();
+
+  /* ── THEME TOGGLE ── */
+  (function(){
+    const stored = localStorage.getItem('index-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = stored ? stored === 'dark' : prefersDark;
+    if (!isDark) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.getElementById('theme-icon').textContent = '🌙';
+      document.getElementById('theme-label').textContent = 'Modo oscuro';
+    }
+  })();
+
+  function toggleTheme() {
+    const root = document.documentElement;
+    const isLight = root.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      root.removeAttribute('data-theme');
+      document.getElementById('theme-icon').textContent = '☀️';
+      document.getElementById('theme-label').textContent = 'Modo claro';
+      localStorage.setItem('index-theme', 'dark');
+    } else {
+      root.setAttribute('data-theme', 'light');
+      document.getElementById('theme-icon').textContent = '🌙';
+      document.getElementById('theme-label').textContent = 'Modo oscuro';
+      localStorage.setItem('index-theme', 'light');
+    }
+  }
 </script>
 </body>
 </html>

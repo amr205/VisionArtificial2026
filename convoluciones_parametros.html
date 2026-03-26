@@ -603,13 +603,117 @@
     display: flex;
     flex-direction: column;
     transition: border-color 0.2s;
+    cursor: zoom-in;
   }
   .anim-card:hover { border-color: var(--accent); }
+  .anim-img-wrap {
+    position: relative;
+    overflow: hidden;
+  }
+  .anim-img-wrap::after {
+    content: '⤢  ver completo';
+    position: absolute;
+    top: 0.5rem; right: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    background: var(--surface);
+    padding: 0.2em 0.5em;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .anim-card:hover .anim-img-wrap::after { opacity: 1; }
   .anim-card img {
     width: 100%;
     height: 160px;
     object-fit: cover;
     display: block;
+    transition: transform 0.3s ease;
+  }
+  .anim-card:hover img { transform: scale(1.03); }
+
+  /* ANIM LIGHTBOX */
+  #anim-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: var(--lb-bg);
+    backdrop-filter: blur(10px);
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  #anim-lightbox.open { display: flex; animation: lbFadeIn 0.18s ease; }
+  #anim-lb-inner {
+    position: relative;
+    max-width: 860px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: lbUp 0.2s ease;
+    max-height: 92vh;
+  }
+  #anim-lb-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+  #anim-lb-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  #anim-lb-controls { display: flex; gap: 0.5rem; align-items: center; }
+  #anim-lb-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow: auto;
+    flex: 1;
+    background: var(--surface3);
+  }
+  #anim-lb-body img {
+    max-width: 100%;
+    max-height: 70vh;
+    display: block;
+    border-radius: 3px;
+  }
+  #anim-lb-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 1rem;
+  }
+  #anim-lb-desc {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+    flex: 1;
+    text-align: center;
+  }
+  #anim-lb-counter {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
   }
   .anim-card-body {
     padding: 0.75rem 1rem;
@@ -778,6 +882,29 @@
     </div>
     <div id="lightbox-viewport">
       <span id="lightbox-hint">scroll para mover · rueda para zoom · Esc para cerrar</span>
+    </div>
+  </div>
+</div>
+
+<!-- ANIM LIGHTBOX -->
+<div id="anim-lightbox" role="dialog" aria-modal="true" aria-label="Animación ampliada">
+  <div id="anim-lb-inner">
+    <div id="anim-lb-topbar">
+      <span id="anim-lb-title">// Animación</span>
+      <div id="anim-lb-controls">
+        <button class="lb-btn" id="anim-lb-close" onclick="closeAnimLb()">✕ cerrar</button>
+      </div>
+    </div>
+    <div id="anim-lb-body">
+      <img id="anim-lb-img" src="" alt="">
+    </div>
+    <div id="anim-lb-nav">
+      <button class="lb-btn" id="anim-lb-prev" onclick="stepAnimLb(-1)">← anterior</button>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem;flex:1">
+        <span id="anim-lb-desc"></span>
+        <span id="anim-lb-counter"></span>
+      </div>
+      <button class="lb-btn" id="anim-lb-next" onclick="stepAnimLb(1)">siguiente →</button>
     </div>
   </div>
 </div>
@@ -1769,9 +1896,11 @@ conv3 = nn.<span class="fn">Conv2d</span>(<span class="st">128</span>, <span cla
 
         <div class="anim-grid">
           <!-- Basic convolution -->
-          <div class="anim-card">
-            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel.gif"
-                 alt="Convolución básica con kernel 3×3" loading="lazy">
+          <div class="anim-card" onclick="openAnimLb(0)">
+            <div class="anim-img-wrap">
+              <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel.gif"
+                   alt="Convolución básica con kernel 3×3" loading="lazy">
+            </div>
             <div class="anim-card-body">
               <div class="anim-label">// Algoritmo base</div>
               <div class="anim-title">Convolución con kernel 3×3</div>
@@ -1780,9 +1909,11 @@ conv3 = nn.<span class="fn">Conv2d</span>(<span class="st">128</span>, <span cla
           </div>
 
           <!-- Padding: no padding -->
-          <div class="anim-card">
-            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel.gif"
-                 alt="Sin padding (Valid)" loading="lazy">
+          <div class="anim-card" onclick="openAnimLb(1)">
+            <div class="anim-img-wrap">
+              <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel.gif"
+                   alt="Sin padding (Valid)" loading="lazy">
+            </div>
             <div class="anim-card-body">
               <div class="anim-label">// Padding = 0</div>
               <div class="anim-title">Sin Padding — "Valid"</div>
@@ -1791,9 +1922,11 @@ conv3 = nn.<span class="fn">Conv2d</span>(<span class="st">128</span>, <span cla
           </div>
 
           <!-- Padding: same -->
-          <div class="anim-card">
-            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel-padding.gif"
-                 alt="Padding Same [1,1,1,1]" loading="lazy">
+          <div class="anim-card" onclick="openAnimLb(2)">
+            <div class="anim-img-wrap">
+              <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel-same-padding.gif"
+                   alt="Padding Same [1,1,1,1]" loading="lazy">
+            </div>
             <div class="anim-card-body">
               <div class="anim-label">// Padding = 1</div>
               <div class="anim-title">Padding [1,1,1,1] — "Same"</div>
@@ -1802,9 +1935,11 @@ conv3 = nn.<span class="fn">Conv2d</span>(<span class="st">128</span>, <span cla
           </div>
 
           <!-- Stride 2 no padding -->
-          <div class="anim-card">
-            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel-stride-2.gif"
-                 alt="Stride 2 sin padding" loading="lazy">
+          <div class="anim-card" onclick="openAnimLb(3)">
+            <div class="anim-img-wrap">
+              <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel-stride-2.gif"
+                   alt="Stride 2 sin padding" loading="lazy">
+            </div>
             <div class="anim-card-body">
               <div class="anim-label">// Stride = 2, Padding = 0</div>
               <div class="anim-title">Stride 2 — Sin Padding</div>
@@ -1813,9 +1948,11 @@ conv3 = nn.<span class="fn">Conv2d</span>(<span class="st">128</span>, <span cla
           </div>
 
           <!-- Stride 2 with padding -->
-          <div class="anim-card">
-            <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel-stride-2-padding.gif"
-                 alt="Stride 2 con padding Same" loading="lazy">
+          <div class="anim-card" onclick="openAnimLb(4)">
+            <div class="anim-img-wrap">
+              <img src="https://animatedai.github.io/media/convolution-animation-3x3-kernel-stride-2-same-padding.gif"
+                   alt="Stride 2 con padding Same" loading="lazy">
+            </div>
             <div class="anim-card-body">
               <div class="anim-label">// Stride = 2, Padding = 1</div>
               <div class="anim-title">Stride 2 — Padding "Same"</div>
@@ -1824,9 +1961,11 @@ conv3 = nn.<span class="fn">Conv2d</span>(<span class="st">128</span>, <span cla
           </div>
 
           <!-- Groups / Depthwise -->
-          <div class="anim-card">
-            <img src="https://animatedai.github.io/media/depthwise-convolution-animation-3x3-kernel.gif"
-                 alt="Convolución Depthwise" loading="lazy">
+          <div class="anim-card" onclick="openAnimLb(5)">
+            <div class="anim-img-wrap">
+              <img src="https://animatedai.github.io/media/depthwise-convolution-animation-3x3-kernel.gif"
+                   alt="Convolución Depthwise" loading="lazy">
+            </div>
             <div class="anim-card-body">
               <div class="anim-label">// groups = Cin</div>
               <div class="anim-title">Convolución Depthwise</div>
@@ -2288,7 +2427,78 @@ document.addEventListener('keydown',function(e){
   });
 })();
 
-/* ── THEME TOGGLE ── */
+/* ── IMG FALLBACK ── */
+function tryNextSrc(img, candidates) {
+  if (!img._fallbacks) img._fallbacks = [...candidates];
+  const next = img._fallbacks.shift();
+  if (next) {
+    img.onerror = () => tryNextSrc(img, []);
+    img.src = next;
+    // Also update ANIM_DATA src to match so lightbox shows correct URL
+    const card = img.closest('.anim-card');
+    if (card) {
+      const idx = [...document.querySelectorAll('.anim-card')].indexOf(card);
+      if (idx >= 0 && ANIM_DATA[idx]) ANIM_DATA[idx].src = next;
+    }
+  } else {
+    // All failed — show placeholder text
+    img.style.display = 'none';
+    const wrap = img.parentElement;
+    if (wrap && !wrap.querySelector('.anim-placeholder')) {
+      const p = document.createElement('div');
+      p.className = 'anim-placeholder';
+      p.style.cssText = 'height:160px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-align:center;padding:1rem;';
+      p.textContent = 'GIF no disponible — ver en animatedai.github.io';
+      wrap.appendChild(p);
+    }
+  }
+}
+
+/* ── ANIM LIGHTBOX ── */
+const ANIM_DATA = [
+  { src: 'https://animatedai.github.io/media/convolution-animation-3x3-kernel.gif',      title: '// Algoritmo base',          desc: 'Convolución con kernel 3×3 — sin padding, stride 1' },
+  { src: 'https://animatedai.github.io/media/convolution-animation-3x3-kernel.gif',      title: '// Padding = 0',             desc: 'Sin Padding ("Valid") — salida más pequeña que entrada' },
+  { src: 'https://animatedai.github.io/media/convolution-animation-3x3-kernel-same-padding.gif', title: '// Padding = 1',           desc: 'Padding [1,1,1,1] ("Same") — salida conserva tamaño' },
+  { src: 'https://animatedai.github.io/media/convolution-animation-3x3-kernel-stride-2.gif', title: '// Stride = 2, Padding = 0', desc: 'Stride 2 sin padding — resolución espacial a la mitad' },
+  { src: 'https://animatedai.github.io/media/convolution-animation-3x3-kernel-stride-2-same-padding.gif', title: '// Stride = 2, Padding = 1', desc: 'Stride 2 con padding "Same" — submuestreo preservando bordes' },
+  { src: 'https://animatedai.github.io/media/depthwise-convolution-animation-3x3-kernel.gif', title: '// groups = Cin',        desc: 'Convolución Depthwise — cada canal con su propio filtro' },
+];
+let animLbIdx = 0;
+
+function openAnimLb(i) {
+  animLbIdx = i;
+  renderAnimLb();
+  document.getElementById('anim-lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeAnimLb() {
+  document.getElementById('anim-lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function stepAnimLb(dir) {
+  animLbIdx = (animLbIdx + dir + ANIM_DATA.length) % ANIM_DATA.length;
+  renderAnimLb();
+}
+function renderAnimLb() {
+  const d = ANIM_DATA[animLbIdx];
+  document.getElementById('anim-lb-img').src = d.src;
+  document.getElementById('anim-lb-img').alt = d.desc;
+  document.getElementById('anim-lb-title').textContent = d.title;
+  document.getElementById('anim-lb-desc').textContent = d.desc;
+  document.getElementById('anim-lb-counter').textContent = `${animLbIdx + 1} / ${ANIM_DATA.length}`;
+}
+document.getElementById('anim-lightbox').addEventListener('click', function(e) {
+  if (e.target === this) closeAnimLb();
+});
+document.addEventListener('keydown', function(e) {
+  const lb = document.getElementById('anim-lightbox');
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') closeAnimLb();
+  if (e.key === 'ArrowLeft') stepAnimLb(-1);
+  if (e.key === 'ArrowRight') stepAnimLb(1);
+});
+
+
 (function(){
   // Detect system preference on first load
   const stored = localStorage.getItem('conv-theme');
