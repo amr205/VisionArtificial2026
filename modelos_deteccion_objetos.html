@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modelos de Detección de Objetos</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --surface3: #0d0d15;
+    --border: #252535;
+    --accent: #6ee7f7;
+    --accent2: #f7c86e;
+    --accent3: #b06ef7;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --lb-bg: rgba(5,5,10,0.93);
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface2: #eef0f5;
+    --surface3: #f0f1f6;
+    --border: #d0d4e0;
+    --accent: #0a8fa3;
+    --accent2: #b07a00;
+    --accent3: #7a36c9;
+    --text: #1a1a2e;
+    --muted: #5a5a80;
+    --lb-bg: rgba(240,241,246,0.96);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    padding: 2.5rem 2rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(110,231,247,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: 5%;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(176,110,247,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--accent); }
+  .header-sub {
+    margin-top: 0.75rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-family: var(--mono);
+  }
+  .header-meta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.3em 0.8em;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .badge-cyan  { background: rgba(110,231,247,0.12); color: var(--accent); border: 1px solid rgba(110,231,247,0.25); }
+  .badge-gold  { background: rgba(247,200,110,0.12); color: var(--accent2); border: 1px solid rgba(247,200,110,0.25); }
+  .badge-purple{ background: rgba(176,110,247,0.12); color: var(--accent3); border: 1px solid rgba(176,110,247,0.25); }
+
+  .app-shell {
+    display: flex;
+    min-height: calc(100vh - 160px);
+  }
+
+  .sidebar {
+    width: 210px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 2rem 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .sidebar-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0 1.25rem 1rem;
+    opacity: 0.6;
+  }
+  .sidebar-timeline {
+    position: relative;
+    padding-left: 1.25rem;
+  }
+  .sidebar-timeline::before {
+    content: '';
+    position: absolute;
+    left: 2rem;
+    top: 0.55rem;
+    bottom: 0.55rem;
+    width: 1px;
+    background: var(--border);
+  }
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .tab-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    transition: all 0.25s;
+    position: relative;
+    z-index: 1;
+    margin-left: 0.75rem;
+  }
+  .tab-btn:hover .tab-dot { background: var(--muted); border-color: var(--muted); }
+  .tab-btn.active .tab-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(110,231,247,0.5); }
+  .tab-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+  .tab-year {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+  .tab-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--muted);
+    transition: color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tab-btn:hover .tab-name,
+  .tab-btn:hover .tab-year { color: var(--text); }
+  .tab-btn.active .tab-name { color: var(--accent); }
+  .tab-btn.active .tab-year { color: var(--accent); opacity: 0.7; }
+  .tab-btn::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: rgba(110,231,247,0.07);
+    transition: width 0.2s;
+    border-radius: 0 3px 3px 0;
+  }
+  .tab-btn.active::before { width: 100%; }
+
+  .content-area {
+    flex: 1;
+    min-width: 0;
+    padding: 2rem;
+  }
+
+  .panel { display: none; animation: fadeUp 0.35s ease; }
+  .panel.active {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .card-body-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+  }
+  @media (min-width: 1400px) {
+    .card-body-grid { grid-template-columns: 3fr 2fr; }
+  }
+
+  .timeline-wrap { display: none; }
+  .scroll-hint   { display: none; }
+
+  @media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { display: none; }
+    .timeline-wrap {
+      display: block;
+      position: relative;
+      padding: 2rem 1.5rem 0;
+    }
+    .timeline-bar {
+      position: absolute;
+      top: 2.85rem;
+      left: 1.5rem; right: 1.5rem;
+      height: 1px;
+      background: var(--border);
+    }
+    .tabs-scroll {
+      overflow-x: auto;
+      scrollbar-width: none;
+      position: relative;
+      z-index: 1;
+    }
+    .tabs-scroll::-webkit-scrollbar { display: none; }
+    .tabs { display: flex; gap: 0; min-width: max-content; }
+    .tab-btn {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0 1.25rem 1.25rem;
+      width: auto;
+    }
+    .tab-dot { margin-left: 0; }
+    .tab-text { align-items: center; }
+    .tab-name { white-space: nowrap; font-size: 0.75rem; }
+    .tab-btn::before { display: none; }
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 0; height: 2px;
+      background: var(--accent);
+      transition: width 0.25s;
+    }
+    .tab-btn.active::after { width: 100%; }
+    .scroll-hint {
+      display: block;
+      text-align: center;
+      padding: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--muted);
+    }
+    .content-area { padding: 1.25rem 1rem; }
+    .panel.active { flex-direction: column; }
+    .card-body-grid { display: flex !important; flex-direction: column; }
+    .card-body-grid .diagram-section { border-right: none; }
+    .card-body-grid .code-section { border-top: 1px solid var(--border); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .arch-year {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.3rem;
+  }
+  .arch-name {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .arch-author {
+    margin-top: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .arch-venue {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--accent2);
+    margin-top: 0.2rem;
+    opacity: 0.8;
+  }
+
+  .diagram-section { padding: 1.5rem; }
+  .diagram-section h3 {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .diagram-svg-wrap {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    cursor: zoom-in;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .diagram-svg-wrap:hover { border-color: rgba(110,231,247,0.4); }
+  .diagram-svg-wrap::after {
+    content: '⤢  ampliar';
+    position: absolute;
+    top: 0.5rem; right: 0.75rem;
+    font-size: 0.6rem;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+  }
+  .diagram-svg-wrap:hover::after { opacity: 0.7; }
+  .diagram-svg-wrap svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .code-section { padding: 1.5rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; }
+  .code-section h3 {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Sub-models card for panels with multiple architectures */
+  .sub-cards { display: flex; flex-direction: column; gap: 1rem; }
+  .sub-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .sub-card-header {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .sub-card-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .sub-card-year {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--accent2);
+  }
+  .sub-card-body { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
+  .sub-card-desc {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .sub-card-desc em { color: var(--accent); font-style: normal; font-weight: 700; }
+
+  pre {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    line-height: 1.7;
+    color: var(--text);
+    flex: 1;
+  }
+  .kw  { color: var(--accent2); }
+  .fn  { color: var(--accent); }
+  .st  { color: var(--accent3); }
+  .cm  { color: var(--muted); font-style: italic; }
+  .nb  { color: #f7a06e; }
+  :root[data-theme="light"] .nb { color: #c06000; }
+
+  .details-section { border-top: 1px solid var(--border); margin-top: auto; }
+  .details-toggle {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .details-toggle:hover { background: var(--surface2); }
+  .details-toggle .toggle-label { display: flex; align-items: center; gap: 0.5rem; }
+  .details-toggle .arrow {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    transition: transform 0.25s;
+  }
+  .details-toggle.open .arrow { transform: rotate(90deg); }
+  .details-body { display: none; padding: 0 1.5rem 1.5rem; animation: fadeUp 0.25s ease; }
+  .details-body.open { display: block; }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .detail-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+  }
+  .detail-val {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    padding: 0.25em 0.6em;
+    border-radius: 2px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .tag.highlight { color: var(--accent3); border-color: rgba(176,110,247,0.3); background: rgba(176,110,247,0.08); }
+  .novelty-box {
+    background: rgba(110,231,247,0.05);
+    border: 1px solid rgba(110,231,247,0.15);
+    border-radius: 3px;
+    padding: 0.9rem 1rem;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--text);
+    margin-top: 0.75rem;
+  }
+  .novelty-box strong { color: var(--accent); }
+
+  /* Comparison table */
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    margin-top: 1rem;
+  }
+  .cmp-table th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    text-align: left;
+    font-weight: 700;
+  }
+  .cmp-table td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .cmp-table tr:nth-child(even) td { background: var(--surface2); }
+  .cmp-table .cv { color: var(--accent); font-weight: 700; }
+  .cmp-table .cy { color: var(--accent2); }
+  .cmp-table .ck { color: var(--accent3); }
+
+  /* LIGHTBOX */
+  #lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--lb-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+  }
+  #lightbox.open { display: flex; animation: lbFadeIn 0.18s ease; }
+  @keyframes lbFadeIn { from { opacity:0 } to { opacity:1 } }
+  #lightbox-inner {
+    position: relative;
+    width: 92vw;
+    max-width: 1600px;
+    height: 88vh;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: lbUp 0.2s ease;
+  }
+  @keyframes lbUp {
+    from { opacity:0; transform: translateY(14px) scale(0.985); }
+    to   { opacity:1; transform: translateY(0) scale(1); }
+  }
+  #lightbox-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 1rem;
+  }
+  #lightbox-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  #lightbox-controls { display: flex; gap: 0.5rem; align-items: center; }
+  .lb-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 0.35em 0.8em;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .lb-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(110,231,247,0.06); }
+  .lb-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+  .lb-btn.danger:hover { border-color: #f76e6e; color: #f76e6e; background: rgba(247,110,110,0.06); }
+  #lightbox-counter { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); padding: 0 0.25rem; }
+  #lightbox-viewport {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+  }
+  #lightbox-hint {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    opacity: 0.4;
+    letter-spacing: 0.08em;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  #theme-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.4em 0.9em;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    transition: border-color 0.2s, background 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  @media (min-width: 900px) {
+    .card-body-grid .diagram-section { border-right: 1px solid var(--border); }
+    .card-body-grid .code-section { border-top: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" role="dialog" aria-modal="true">
+  <div id="lightbox-inner">
+    <div id="lightbox-topbar">
+      <span id="lightbox-title">// Diagrama</span>
+      <div id="lightbox-controls">
+        <button class="lb-btn" id="lb-prev">← anterior</button>
+        <span id="lightbox-counter"></span>
+        <button class="lb-btn" id="lb-next">siguiente →</button>
+        <span style="width:1px;background:var(--border);align-self:stretch;margin:0 0.25rem"></span>
+        <button class="lb-btn" id="lb-zoom-out">－</button>
+        <button class="lb-btn" id="lb-zoom-reset">100%</button>
+        <button class="lb-btn" id="lb-zoom-in">＋</button>
+        <span style="width:1px;background:var(--border);align-self:stretch;margin:0 0.25rem"></span>
+        <button class="lb-btn danger" id="lb-close">✕ cerrar</button>
+      </div>
+    </div>
+    <div id="lightbox-viewport">
+      <span id="lightbox-hint">scroll para mover · rueda para zoom · Esc para cerrar</span>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <div class="header-label">// Material de clase · 2025</div>
+    <h1>Modelos para <span>Detección de Objetos</span></h1>
+    <p class="header-sub">Clásicos · Redes · Two-Stage · Single-Stage · Transformers</p>
+  </div>
+  <div class="header-meta">
+    <span class="badge badge-cyan">6 Familias</span>
+    <span class="badge badge-gold">1990s → 2023</span>
+    <span class="badge badge-purple">Computer Vision</span>
+    <button id="theme-toggle" onclick="toggleTheme()">
+      <span id="theme-icon">☀️</span>
+      <span id="theme-label">Modo claro</span>
+    </button>
+  </div>
+</header>
+
+<!-- MOBILE TABS -->
+<div class="timeline-wrap">
+  <div class="timeline-bar"></div>
+  <div class="tabs-scroll">
+    <div class="tabs" id="tabs-mobile">
+      <button class="tab-btn active" data-tab="template"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">Clásico</div><div class="tab-name">Template Match</div></div></button>
+      <button class="tab-btn" data-tab="features"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">Clásico</div><div class="tab-name">Feature Match</div></div></button>
+      <button class="tab-btn" data-tab="siamese"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2015+</div><div class="tab-name">Siamese Nets</div></div></button>
+      <button class="tab-btn" data-tab="twostage"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2014-2017</div><div class="tab-name">Two-Stage</div></div></button>
+      <button class="tab-btn" data-tab="singlestage"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2015-2023</div><div class="tab-name">Single-Stage</div></div></button>
+      <button class="tab-btn" data-tab="transformer"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2020+</div><div class="tab-name">Transformers</div></div></button>
+    </div>
+  </div>
+  <div class="scroll-hint">← scroll →</div>
+</div>
+
+<div class="app-shell">
+  <nav class="sidebar">
+    <div class="sidebar-label">// Categorías</div>
+    <div class="sidebar-timeline">
+      <div class="tabs" id="tabs">
+        <button class="tab-btn active" data-tab="template"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">Clásico</div><div class="tab-name">Template Matching</div></div></button>
+        <button class="tab-btn" data-tab="features"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">Clásico</div><div class="tab-name">Feature Matching</div></div></button>
+        <button class="tab-btn" data-tab="siamese"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2015+</div><div class="tab-name">Siamese Tracking</div></div></button>
+        <button class="tab-btn" data-tab="twostage"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2014–2017</div><div class="tab-name">Two-Stage Det.</div></div></button>
+        <button class="tab-btn" data-tab="singlestage"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2015–2023</div><div class="tab-name">Single-Stage Det.</div></div></button>
+        <button class="tab-btn" data-tab="transformer"><div class="tab-dot"></div><div class="tab-text"><div class="tab-year">2020+</div><div class="tab-name">Transformers</div></div></button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="content-area">
+  <div class="panels" style="padding:0 0 4rem;">
+
+  <!-- ══════════════════════════════════════════
+       PANEL 1: TEMPLATE MATCHING
+  ══════════════════════════════════════════ -->
+  <div class="panel active" id="panel-template">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// Enfoque Clásico</div>
+          <div class="arch-name">Template Matching</div>
+          <div class="arch-author">Métodos basados en correlación de píxeles</div>
+          <div class="arch-venue">OpenCV · Visión por Computadora Clásica</div>
+        </div>
+        <span class="badge badge-gold">No-DL</span>
+      </div>
+      <div class="card-body-grid">
+        <div class="diagram-section">
+          <h3>// Funcionamiento · Sliding Window + Correlación</h3>
+          <div class="diagram-svg-wrap">
+            <svg width="540" height="240" viewBox="0 0 540 240" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+              <defs>
+                <linearGradient id="gC" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#6ee7f7;stop-opacity:0.7"/><stop offset="100%" style="stop-color:#6ee7f7;stop-opacity:0.25"/></linearGradient>
+                <linearGradient id="gG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#f7c86e;stop-opacity:0.7"/><stop offset="100%" style="stop-color:#f7c86e;stop-opacity:0.25"/></linearGradient>
+                <linearGradient id="gP" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#b06ef7;stop-opacity:0.7"/><stop offset="100%" style="stop-color:#b06ef7;stop-opacity:0.25"/></linearGradient>
+              </defs>
+              <!-- Source image -->
+              <rect x="10" y="30" width="160" height="120" rx="3" fill="#1a1a26" stroke="#252535" stroke-width="1.5"/>
+              <text x="90" y="22" text-anchor="middle" fill="#7070a0" font-size="9">IMAGEN FUENTE</text>
+              <!-- Fake image content -->
+              <rect x="20" y="40" width="140" height="100" rx="2" fill="#12121a"/>
+              <rect x="35" y="55" width="30" height="30" rx="2" fill="#252535"/>
+              <rect x="75" y="65" width="40" height="40" rx="2" fill="#1e1e2e"/>
+              <rect x="125" y="50" width="25" height="25" rx="2" fill="#252535"/>
+              <!-- Sliding window on source -->
+              <rect x="68" y="58" width="48" height="48" rx="2" fill="none" stroke="#6ee7f7" stroke-width="2" stroke-dasharray="5,3"/>
+              <text x="92" y="115" text-anchor="middle" fill="#6ee7f7" font-size="7">ventana</text>
+              <!-- Arrow to template -->
+              <line x1="180" y1="90" x2="215" y2="90" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="215,86 221,90 215,94" fill="#505070"/>
+              <!-- Template -->
+              <rect x="221" y="60" width="60" height="60" rx="3" fill="url(#gG)" stroke="#f7c86e" stroke-width="1.5"/>
+              <text x="251" y="53" text-anchor="middle" fill="#7070a0" font-size="9">TEMPLATE</text>
+              <text x="251" y="128" text-anchor="middle" fill="#f7c86e" font-size="8">T(x,y)</text>
+              <!-- Arrow to operation -->
+              <line x1="281" y1="90" x2="316" y2="90" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="316,86 322,90 316,94" fill="#505070"/>
+              <!-- Operation box -->
+              <rect x="322" y="65" width="80" height="50" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+              <text x="362" y="84" text-anchor="middle" fill="#b06ef7" font-size="8">Correlación</text>
+              <text x="362" y="97" text-anchor="middle" fill="#b06ef7" font-size="8">R = Σ(I·T)</text>
+              <text x="362" y="108" text-anchor="middle" fill="#7070a0" font-size="7">TM_CCOEFF</text>
+              <!-- Arrow to result -->
+              <line x1="402" y1="90" x2="437" y2="90" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="437,86 443,90 437,94" fill="#505070"/>
+              <!-- Result -->
+              <rect x="443" y="55" width="85" height="70" rx="3" fill="#1a1a26" stroke="#6ee7f7" stroke-width="1"/>
+              <text x="485" y="47" text-anchor="middle" fill="#7070a0" font-size="9">MAPA DE RESULTADO</text>
+              <rect x="453" y="63" width="65" height="54" rx="2" fill="#12121a"/>
+              <!-- Heatmap visualization -->
+              <rect x="453" y="63" width="20" height="18" fill="rgba(110,231,247,0.05)"/>
+              <rect x="473" y="63" width="20" height="18" fill="rgba(110,231,247,0.1)"/>
+              <rect x="493" y="63" width="25" height="18" fill="rgba(110,231,247,0.06)"/>
+              <rect x="453" y="81" width="20" height="18" fill="rgba(110,231,247,0.12)"/>
+              <rect x="473" y="81" width="20" height="18" fill="rgba(110,231,247,0.85)"/>
+              <rect x="493" y="81" width="25" height="18" fill="rgba(110,231,247,0.2)"/>
+              <rect x="453" y="99" width="20" height="18" fill="rgba(110,231,247,0.07)"/>
+              <rect x="473" y="99" width="20" height="18" fill="rgba(110,231,247,0.15)"/>
+              <rect x="493" y="99" width="25" height="18" fill="rgba(110,231,247,0.04)"/>
+              <!-- Peak marker -->
+              <circle cx="483" cy="90" r="5" fill="none" stroke="#6ee7f7" stroke-width="1.5"/>
+              <!-- Methods list -->
+              <text x="10" y="175" fill="#7070a0" font-size="8">Métodos disponibles:</text>
+              <text x="10" y="190" fill="#6ee7f7" font-size="7.5">TM_SQDIFF</text>
+              <text x="10" y="202" fill="#7070a0" font-size="7">Suma diferencias cuadradas</text>
+              <text x="135" y="190" fill="#6ee7f7" font-size="7.5">TM_CCORR</text>
+              <text x="135" y="202" fill="#7070a0" font-size="7">Correlación cruzada</text>
+              <text x="255" y="190" fill="#6ee7f7" font-size="7.5">TM_CCOEFF</text>
+              <text x="255" y="202" fill="#7070a0" font-size="7">Coeficiente correlación</text>
+              <text x="10" y="220" fill="#f7c86e" font-size="7">★ Variantes _NORMED normalizan el resultado entre 0 y 1</text>
+            </svg>
+          </div>
+        </div>
+        <div class="code-section">
+          <h3>// Python · OpenCV Template Matching</h3>
+          <pre><span class="kw">import</span> cv2
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># Cargar imagen fuente y template</span>
+img = cv2.<span class="fn">imread</span>(<span class="st">'imagen.jpg'</span>)
+template = cv2.<span class="fn">imread</span>(<span class="st">'template.jpg'</span>)
+
+<span class="cm"># Convertir a escala de grises</span>
+img_gray = cv2.<span class="fn">cvtColor</span>(img, cv2.COLOR_BGR2GRAY)
+tmpl_gray = cv2.<span class="fn">cvtColor</span>(template, cv2.COLOR_BGR2GRAY)
+h, w = tmpl_gray.shape
+
+<span class="cm"># Aplicar template matching</span>
+result = cv2.<span class="fn">matchTemplate</span>(
+    img_gray, tmpl_gray,
+    cv2.TM_CCOEFF_NORMED   <span class="cm"># método</span>
+)
+
+<span class="cm"># Encontrar la posición de máxima similitud</span>
+_, max_val, _, max_loc = cv2.<span class="fn">minMaxLoc</span>(result)
+
+<span class="cm"># Dibujar bounding box</span>
+top_left = max_loc
+bottom_right = (top_left[<span class="nb">0</span>] + w, top_left[<span class="nb">1</span>] + h)
+cv2.<span class="fn">rectangle</span>(img, top_left, bottom_right,
+             (<span class="nb">0</span>,<span class="nb">255</span>,<span class="nb">0</span>), <span class="nb">2</span>)
+
+<span class="cm"># Multi-scale: resize template para robustez</span>
+<span class="kw">for</span> scale <span class="kw">in</span> np.<span class="fn">linspace</span>(<span class="nb">0.5</span>, <span class="nb">1.5</span>, <span class="nb">20</span>):
+    resized = cv2.<span class="fn">resize</span>(tmpl_gray,
+        <span class="kw">None</span>, fx=scale, fy=scale)
+    res = cv2.<span class="fn">matchTemplate</span>(
+        img_gray, resized,
+        cv2.TM_CCOEFF_NORMED)</pre>
+        </div>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles del método</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Complejidad</div><div class="detail-val">O(W·H·w·h) por ventana</div></div>
+            <div class="detail-item"><div class="detail-label">Requiere entrenamiento</div><div class="detail-val">No</div></div>
+            <div class="detail-item"><div class="detail-label">Invarianza a rotación</div><div class="detail-val">No (necesita multi-angle)</div></div>
+            <div class="detail-item"><div class="detail-label">Invarianza a escala</div><div class="detail-val">Limitada (multi-scale)</div></div>
+            <div class="detail-item"><div class="detail-label">Librería</div><div class="detail-val">OpenCV</div></div>
+            <div class="detail-item"><div class="detail-label">Uso típico</div><div class="detail-val">Inspección industrial, UI automation</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Sliding Window</span>
+            <span class="tag">Correlación Cruzada</span>
+            <span class="tag">Sin GPU</span>
+            <span class="tag highlight">TM_CCOEFF_NORMED</span>
+            <span class="tag">Multi-Scale</span>
+            <span class="tag">NMS post-proceso</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Cuándo usarlo?</strong><br>
+            Template Matching es ideal cuando el objeto a detectar es <em>rígido</em>, tiene apariencia constante y el fondo es relativamente controlado. Es extremadamente rápido y no necesita datos etiquetados. Su mayor limitación es la poca robustez ante cambios de iluminación, rotación o deformación. Se usa en automatización de pruebas de UI, inspección de calidad industrial y localización de marcadores fiduciales.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 2: FEATURE MATCHING
+  ══════════════════════════════════════════ -->
+  <div class="panel" id="panel-features">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// Enfoque Clásico Avanzado</div>
+          <div class="arch-name">Feature Matching</div>
+          <div class="arch-author">Lowe (SIFT·2004), Bay et al. (SURF·2006), Rublee et al. (ORB·2011)</div>
+          <div class="arch-venue">ICCV · ECCV · CVPR — Detección de Keypoints + Descriptores</div>
+        </div>
+        <span class="badge badge-cyan">Keypoints</span>
+      </div>
+      <div class="card-body-grid">
+        <div class="diagram-section">
+          <h3>// Pipeline · Detect → Describe → Match → RANSAC</h3>
+          <div class="diagram-svg-wrap">
+            <svg width="560" height="250" viewBox="0 0 560 250" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+              <!-- Stage boxes -->
+              <!-- 1: Detect -->
+              <rect x="8" y="20" width="110" height="80" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+              <text x="63" y="38" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">① DETECT</text>
+              <text x="63" y="52" text-anchor="middle" fill="#7070a0" font-size="7">Scale-space</text>
+              <text x="63" y="63" text-anchor="middle" fill="#7070a0" font-size="7">DoG / Hessian</text>
+              <text x="63" y="74" text-anchor="middle" fill="#7070a0" font-size="7">FAST corners</text>
+              <text x="63" y="85" text-anchor="middle" fill="#f7c86e" font-size="7">→ Keypoints</text>
+              <!-- 2: Describe -->
+              <line x1="118" y1="60" x2="133" y2="60" stroke="#252535" stroke-width="1.5"/>
+              <polygon points="133,56 139,60 133,64" fill="#252535"/>
+              <rect x="139" y="20" width="110" height="80" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
+              <text x="194" y="38" text-anchor="middle" fill="#f7c86e" font-size="8" font-weight="bold">② DESCRIBE</text>
+              <text x="194" y="52" text-anchor="middle" fill="#7070a0" font-size="7">Patch alrededor</text>
+              <text x="194" y="63" text-anchor="middle" fill="#7070a0" font-size="7">del keypoint</text>
+              <text x="194" y="74" text-anchor="middle" fill="#7070a0" font-size="7">Gradientes / bits</text>
+              <text x="194" y="85" text-anchor="middle" fill="#f7c86e" font-size="7">→ Descriptor</text>
+              <!-- 3: Match -->
+              <line x1="249" y1="60" x2="264" y2="60" stroke="#252535" stroke-width="1.5"/>
+              <polygon points="264,56 270,60 264,64" fill="#252535"/>
+              <rect x="270" y="20" width="110" height="80" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+              <text x="325" y="38" text-anchor="middle" fill="#b06ef7" font-size="8" font-weight="bold">③ MATCH</text>
+              <text x="325" y="52" text-anchor="middle" fill="#7070a0" font-size="7">BF / FLANN</text>
+              <text x="325" y="63" text-anchor="middle" fill="#7070a0" font-size="7">Lowe ratio test</text>
+              <text x="325" y="74" text-anchor="middle" fill="#7070a0" font-size="7">d1/d2 &lt; 0.75</text>
+              <text x="325" y="85" text-anchor="middle" fill="#b06ef7" font-size="7">→ Buenos matches</text>
+              <!-- 4: RANSAC -->
+              <line x1="380" y1="60" x2="395" y2="60" stroke="#252535" stroke-width="1.5"/>
+              <polygon points="395,56 401,60 395,64" fill="#252535"/>
+              <rect x="401" y="20" width="150" height="80" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+              <text x="476" y="38" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">④ RANSAC + Homografía</text>
+              <text x="476" y="52" text-anchor="middle" fill="#7070a0" font-size="7">findHomography()</text>
+              <text x="476" y="63" text-anchor="middle" fill="#7070a0" font-size="7">perspectiveTransform()</text>
+              <text x="476" y="74" text-anchor="middle" fill="#7070a0" font-size="7">Filtra outliers</text>
+              <text x="476" y="85" text-anchor="middle" fill="#6ee7f7" font-size="7">→ Bounding box</text>
+
+              <!-- Algorithms comparison table -->
+              <text x="8" y="125" fill="#6ee7f7" font-size="8" font-weight="bold">Algoritmo</text>
+              <text x="110" y="125" fill="#6ee7f7" font-size="8" font-weight="bold">Tipo desc.</text>
+              <text x="220" y="125" fill="#6ee7f7" font-size="8" font-weight="bold">Invarianza</text>
+              <text x="350" y="125" fill="#6ee7f7" font-size="8" font-weight="bold">Velocidad</text>
+              <text x="440" y="125" fill="#6ee7f7" font-size="8" font-weight="bold">Patente</text>
+              <line x1="8" y1="128" x2="552" y2="128" stroke="#252535" stroke-width="1"/>
+              <!-- SIFT -->
+              <text x="8" y="143" fill="#f7c86e" font-size="8">SIFT</text>
+              <text x="110" y="143" fill="#7070a0" font-size="7.5">Float 128D</text>
+              <text x="220" y="143" fill="#7070a0" font-size="7.5">Escala, rot., ilum.</text>
+              <text x="350" y="143" fill="#7070a0" font-size="7.5">Lento</text>
+              <text x="440" y="143" fill="#b06ef7" font-size="7.5">Libre (2020)</text>
+              <!-- SURF -->
+              <text x="8" y="160" fill="#f7c86e" font-size="8">SURF</text>
+              <text x="110" y="160" fill="#7070a0" font-size="7.5">Float 64D</text>
+              <text x="220" y="160" fill="#7070a0" font-size="7.5">Escala, rot.</text>
+              <text x="350" y="160" fill="#7070a0" font-size="7.5">Medio</text>
+              <text x="440" y="160" fill="#b06ef7" font-size="7.5">Patentado</text>
+              <!-- ORB -->
+              <text x="8" y="177" fill="#6ee7f7" font-size="8">ORB</text>
+              <text x="110" y="177" fill="#7070a0" font-size="7.5">Binario 256b</text>
+              <text x="220" y="177" fill="#7070a0" font-size="7.5">Escala, rot. aprox.</text>
+              <text x="350" y="177" fill="#7070a0" font-size="7.5">Muy rápido</text>
+              <text x="440" y="177" fill="#6ee7f7" font-size="7.5">Libre</text>
+              <!-- AKAZE -->
+              <text x="8" y="194" fill="#f7c86e" font-size="8">AKAZE</text>
+              <text x="110" y="194" fill="#7070a0" font-size="7.5">Binario 486b</text>
+              <text x="220" y="194" fill="#7070a0" font-size="7.5">Escala, rot., no-lin.</text>
+              <text x="350" y="194" fill="#7070a0" font-size="7.5">Medio</text>
+              <text x="440" y="194" fill="#6ee7f7" font-size="7.5">Libre</text>
+              <!-- BRISK -->
+              <text x="8" y="211" fill="#f7c86e" font-size="8">BRISK</text>
+              <text x="110" y="211" fill="#7070a0" font-size="7.5">Binario 512b</text>
+              <text x="220" y="211" fill="#7070a0" font-size="7.5">Escala, rot.</text>
+              <text x="350" y="211" fill="#7070a0" font-size="7.5">Rápido</text>
+              <text x="440" y="211" fill="#6ee7f7" font-size="7.5">Libre</text>
+              <line x1="8" y1="128" x2="8" y2="215" stroke="#252535" stroke-width="1"/>
+            </svg>
+          </div>
+        </div>
+        <div class="code-section">
+          <h3>// Python · OpenCV Feature Matching (SIFT + FLANN)</h3>
+          <pre><span class="kw">import</span> cv2
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+img1 = cv2.<span class="fn">imread</span>(<span class="st">'objeto.jpg'</span>, <span class="nb">0</span>)
+img2 = cv2.<span class="fn">imread</span>(<span class="st">'escena.jpg'</span>, <span class="nb">0</span>)
+
+<span class="cm"># Inicializar detector SIFT</span>
+sift = cv2.SIFT_<span class="fn">create</span>()
+
+<span class="cm"># Detectar y describir keypoints</span>
+kp1, des1 = sift.<span class="fn">detectAndCompute</span>(img1, <span class="kw">None</span>)
+kp2, des2 = sift.<span class="fn">detectAndCompute</span>(img2, <span class="kw">None</span>)
+
+<span class="cm"># FLANN matcher (más rápido que BruteForce)</span>
+index_params = dict(algorithm=<span class="nb">1</span>, trees=<span class="nb">5</span>)
+search_params = dict(checks=<span class="nb">50</span>)
+flann = cv2.FlannBasedMatcher.<span class="fn">create</span>()
+matches = flann.<span class="fn">knnMatch</span>(des1, des2, k=<span class="nb">2</span>)
+
+<span class="cm"># Ratio test de Lowe</span>
+good = [m <span class="kw">for</span> m, n <span class="kw">in</span> matches
+        <span class="kw">if</span> m.distance &lt; <span class="nb">0.75</span> * n.distance]
+
+<span class="cm"># Homografía + localización con RANSAC</span>
+<span class="kw">if</span> len(good) > <span class="nb">10</span>:
+    src_pts = np.<span class="fn">float32</span>(
+        [kp1[m.queryIdx].pt <span class="kw">for</span> m <span class="kw">in</span> good]
+    ).reshape(-<span class="nb">1</span>,<span class="nb">1</span>,<span class="nb">2</span>)
+    dst_pts = np.<span class="fn">float32</span>(
+        [kp2[m.trainIdx].pt <span class="kw">for</span> m <span class="kw">in</span> good]
+    ).reshape(-<span class="nb">1</span>,<span class="nb">1</span>,<span class="nb">2</span>)
+    M, mask = cv2.<span class="fn">findHomography</span>(
+        src_pts, dst_pts, cv2.RANSAC, <span class="nb">5.0</span>)
+
+<span class="cm"># ORB (libre de patente, más rápido)</span>
+orb = cv2.ORB_<span class="fn">create</span>(nfeatures=<span class="nb">500</span>)
+kp, des = orb.<span class="fn">detectAndCompute</span>(img1, <span class="kw">None</span>)
+bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=<span class="kw">True</span>)</pre>
+        </div>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles del método</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Mejor algoritmo libre</div><div class="detail-val">ORB / AKAZE</div></div>
+            <div class="detail-item"><div class="detail-label">Mejor precisión</div><div class="detail-val">SIFT</div></div>
+            <div class="detail-item"><div class="detail-label">Robustez</div><div class="detail-val">Alta ante cambios de perspectiva</div></div>
+            <div class="detail-item"><div class="detail-label">Requiere GPU</div><div class="detail-val">No (CPU)</div></div>
+            <div class="detail-item"><div class="detail-label">Oclusión parcial</div><div class="detail-val">Tolera bien con RANSAC</div></div>
+            <div class="detail-item"><div class="detail-label">Caso de uso</div><div class="detail-val">AR, panoramas, localización visual</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Scale-Space</span>
+            <span class="tag highlight">DoG / Hessian</span>
+            <span class="tag">Ratio Test</span>
+            <span class="tag highlight">RANSAC</span>
+            <span class="tag">Homografía</span>
+            <span class="tag">FLANN</span>
+            <span class="tag">Descriptores Binarios</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Por qué Feature Matching sigue vigente?</strong><br>
+            A diferencia del template matching, estos métodos son invariantes a <em>escala, rotación e iluminación</em>. SIFT sigue siendo referencia en tareas de localización visual (SLAM, AR). Para aplicaciones en tiempo real, ORB y AKAZE ofrecen descriptores binarios que se comparan con distancia Hamming (muy rápida en CPU). RANSAC filtra outliers robustamente para estimar transformaciones geométricas.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 3: SIAMESE NETWORKS
+  ══════════════════════════════════════════ -->
+  <div class="panel" id="panel-siamese">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2016 → Presente</div>
+          <div class="arch-name">Object Tracking · Siamese Networks</div>
+          <div class="arch-author">Bertinetto et al. (SiamFC·2016), Li et al. (SiamRPN·2018), Zhang et al. (SiamRPN++·2019)</div>
+          <div class="arch-venue">ECCV · CVPR — Tracking by Matching</div>
+        </div>
+        <span class="badge badge-purple">Tracking</span>
+      </div>
+      <div class="card-body-grid">
+        <div class="diagram-section">
+          <h3>// Arquitectura Siamese · Dos ramas · Correlación cruzada</h3>
+          <div class="diagram-svg-wrap">
+            <svg width="560" height="230" viewBox="0 0 560 230" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+              <!-- Template branch (z) -->
+              <text x="50" y="15" text-anchor="middle" fill="#7070a0" font-size="8">TEMPLATE (z)</text>
+              <rect x="8" y="20" width="60" height="45" rx="2" fill="#1a1a26" stroke="#6ee7f7" stroke-width="1"/>
+              <text x="38" y="47" text-anchor="middle" fill="#6ee7f7" font-size="7">127×127</text>
+              <!-- z arrow -->
+              <line x1="68" y1="42" x2="90" y2="42" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="90,38 96,42 90,46" fill="#505070"/>
+              <!-- z CNN -->
+              <rect x="96" y="22" width="80" height="40" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+              <text x="136" y="37" text-anchor="middle" fill="#6ee7f7" font-size="8">φ(z)</text>
+              <text x="136" y="50" text-anchor="middle" fill="#7070a0" font-size="7">AlexNet / ResNet</text>
+              <!-- z feature -->
+              <line x1="176" y1="42" x2="198" y2="42" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="198,38 204,42 198,46" fill="#505070"/>
+              <rect x="204" y="30" width="36" height="24" rx="2" fill="url(#gC)" stroke="#6ee7f7" stroke-width="1"/>
+              <text x="222" y="45" text-anchor="middle" fill="#0a0a0f" font-size="7">6×6×256</text>
+
+              <!-- Search branch (x) -->
+              <text x="50" y="105" text-anchor="middle" fill="#7070a0" font-size="8">BÚSQUEDA (x)</text>
+              <rect x="8" y="110" width="60" height="45" rx="2" fill="#1a1a26" stroke="#f7c86e" stroke-width="1"/>
+              <text x="38" y="137" text-anchor="middle" fill="#f7c86e" font-size="7">255×255</text>
+              <!-- x arrow -->
+              <line x1="68" y1="132" x2="90" y2="132" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="90,128 96,132 90,136" fill="#505070"/>
+              <!-- x CNN (shared weights) -->
+              <rect x="96" y="112" width="80" height="40" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
+              <text x="136" y="127" text-anchor="middle" fill="#f7c86e" font-size="8">φ(x)</text>
+              <text x="136" y="140" text-anchor="middle" fill="#7070a0" font-size="7">Pesos compartidos</text>
+              <!-- x feature -->
+              <line x1="176" y1="132" x2="198" y2="132" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="198,128 204,132 198,136" fill="#505070"/>
+              <rect x="204" y="120" width="36" height="24" rx="2" fill="url(#gG)" stroke="#f7c86e" stroke-width="1"/>
+              <text x="222" y="135" text-anchor="middle" fill="#0a0a0f" font-size="7">22×22×256</text>
+
+              <!-- Cross-correlation -->
+              <line x1="240" y1="42" x2="290" y2="84" stroke="#505070" stroke-width="1.2" stroke-dasharray="4,3"/>
+              <line x1="240" y1="132" x2="290" y2="90" stroke="#505070" stroke-width="1.2" stroke-dasharray="4,3"/>
+              <rect x="270" y="70" width="70" height="40" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+              <text x="305" y="87" text-anchor="middle" fill="#b06ef7" font-size="8">⋆ Cross-Corr</text>
+              <text x="305" y="100" text-anchor="middle" fill="#7070a0" font-size="7">f(z,x)=φ(z)⋆φ(x)</text>
+
+              <!-- Score map -->
+              <line x1="340" y1="90" x2="365" y2="90" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="365,86 371,90 365,94" fill="#505070"/>
+              <rect x="371" y="68" width="60" height="44" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1"/>
+              <text x="401" y="84" text-anchor="middle" fill="#6ee7f7" font-size="7.5">Score Map</text>
+              <text x="401" y="97" text-anchor="middle" fill="#7070a0" font-size="7">17×17</text>
+              <!-- Score map heatmap -->
+              <rect x="375" y="72" width="15" height="12" fill="rgba(110,231,247,0.1)" rx="1"/>
+              <rect x="390" y="72" width="15" height="12" fill="rgba(110,231,247,0.7)" rx="1"/>
+              <rect x="405" y="72" width="15" height="12" fill="rgba(110,231,247,0.2)" rx="1"/>
+              <rect x="375" y="85" width="15" height="12" fill="rgba(110,231,247,0.15)" rx="1"/>
+              <rect x="390" y="85" width="15" height="12" fill="rgba(110,231,247,0.4)" rx="1"/>
+              <rect x="405" y="85" width="15" height="12" fill="rgba(110,231,247,0.1)" rx="1"/>
+
+              <!-- Output -->
+              <line x1="431" y1="90" x2="456" y2="90" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="456,86 462,90 456,94" fill="#505070"/>
+              <rect x="462" y="72" width="90" height="36" rx="3" fill="#1a1a26" stroke="#6ee7f7" stroke-width="1"/>
+              <text x="507" y="86" text-anchor="middle" fill="#6ee7f7" font-size="8">argmax(score)</text>
+              <text x="507" y="99" text-anchor="middle" fill="#7070a0" font-size="7">→ Posición objeto</text>
+
+              <!-- Versions -->
+              <text x="8" y="180" fill="#6ee7f7" font-size="8" font-weight="bold">Evolución:</text>
+              <rect x="8" y="188" width="155" height="34" rx="2" fill="#12121a" stroke="#252535"/>
+              <text x="16" y="202" fill="#f7c86e" font-size="8">SiamFC (2016)</text>
+              <text x="16" y="214" fill="#7070a0" font-size="7">Correlación simple · sin bbox reg.</text>
+              <rect x="172" y="188" width="155" height="34" rx="2" fill="#12121a" stroke="#252535"/>
+              <text x="180" y="202" fill="#f7c86e" font-size="8">SiamRPN (2018)</text>
+              <text x="180" y="214" fill="#7070a0" font-size="7">+ Region Proposal Network</text>
+              <rect x="336" y="188" width="215" height="34" rx="2" fill="#12121a" stroke="#252535"/>
+              <text x="344" y="202" fill="#f7c86e" font-size="8">SiamRPN++ / SiamBAN (2019-2020)</text>
+              <text x="344" y="214" fill="#7070a0" font-size="7">ResNet backbone · depth-wise corr.</text>
+            </svg>
+          </div>
+        </div>
+        <div class="code-section">
+          <h3>// Python · SiamFC-style con PyTorch</h3>
+          <pre><span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+<span class="kw">import</span> torch.nn.functional <span class="kw">as</span> F
+
+<span class="kw">class</span> <span class="fn">SiameseTracker</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        super().<span class="fn">__init__</span>()
+        <span class="cm"># Backbone compartido (pesos iguales)</span>
+        self.backbone = nn.<span class="fn">Sequential</span>(
+            nn.<span class="fn">Conv2d</span>(<span class="nb">3</span>,<span class="nb">96</span>,<span class="nb">11</span>,stride=<span class="nb">2</span>),
+            nn.<span class="fn">ReLU</span>(),
+            nn.<span class="fn">MaxPool2d</span>(<span class="nb">3</span>,stride=<span class="nb">2</span>),
+            nn.<span class="fn">Conv2d</span>(<span class="nb">96</span>,<span class="nb">256</span>,<span class="nb">5</span>),
+            nn.<span class="fn">ReLU</span>(),
+        )
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, z, x):
+        <span class="cm"># z: template 127×127, x: búsqueda 255×255</span>
+        z_feat = self.<span class="fn">backbone</span>(z)  <span class="cm"># [B,256,6,6]</span>
+        x_feat = self.<span class="fn">backbone</span>(x)  <span class="cm"># [B,256,22,22]</span>
+
+        <span class="cm"># Correlación cruzada</span>
+        B = z_feat.size(<span class="nb">0</span>)
+        score_map = F.<span class="fn">conv2d</span>(
+            x_feat.view(<span class="nb">1</span>, -<span class="nb">1</span>, *x_feat.shape[<span class="nb">2</span>:]),
+            z_feat.view(-<span class="nb">1</span>, *z_feat.shape[<span class="nb">1</span>:]),
+            groups=B
+        )
+        <span class="kw">return</span> score_map
+
+<span class="cm"># Usar con pysot (toolkit oficial SiamRPN++)</span>
+<span class="cm"># pip install pysot</span>
+<span class="cm"># from pysot.models.model_builder import ModelBuilder</span>
+<span class="cm"># from pysot.tracker.siamrpn_tracker import SiamRPNTracker</span></pre>
+        </div>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Tarea</div><div class="detail-val">Visual Object Tracking (VOT)</div></div>
+            <div class="detail-item"><div class="detail-label">Velocidad</div><div class="detail-val">~80 FPS (SiamFC)</div></div>
+            <div class="detail-item"><div class="detail-label">Inicialización</div><div class="detail-val">1 sola anotación en frame 0</div></div>
+            <div class="detail-item"><div class="detail-label">Re-detección</div><div class="detail-val">Limitada (sin memoria)</div></div>
+            <div class="detail-item"><div class="detail-label">Benchmark</div><div class="detail-val">VOT2018, GOT-10k, LaSOT</div></div>
+            <div class="detail-item"><div class="detail-label">Backbone típico</div><div class="detail-val">AlexNet → ResNet-50</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Pesos Compartidos</span>
+            <span class="tag highlight">Cross-Correlation</span>
+            <span class="tag">One-Shot Learning</span>
+            <span class="tag">Region Proposal</span>
+            <span class="tag highlight">Tempo Real</span>
+            <span class="tag">Anchor-Based</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Por qué Siamese Networks para tracking?</strong><br>
+            Las redes Siamese aprenden una <em>función de similitud</em> entre el template inicial (objeto a seguir) y regiones de frames sucesivos. Al compartir pesos entre ambas ramas, se garantiza que ambas representaciones estén en el mismo espacio de características. La correlación cruzada actúa como un filtro aprendido. SiamRPN agrega regresión de bounding box y clasificación objeto/fondo, mientras SiamRPN++ usa ResNet y correlación depth-wise para mayor precisión.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 4: TWO-STAGE
+  ══════════════════════════════════════════ -->
+  <div class="panel" id="panel-twostage">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2014 → 2017</div>
+          <div class="arch-name">Two-Stage Object Detection</div>
+          <div class="arch-author">Girshick, Donahue, Darrell, Malik (R-CNN) → He, Gkioxari, Dollár, Girshick (Mask R-CNN)</div>
+          <div class="arch-venue">CVPR · ICCV — Región + Clasificación</div>
+        </div>
+        <span class="badge badge-gold">Alta Precisión</span>
+      </div>
+
+      <!-- Overview diagram -->
+      <div class="diagram-section">
+        <h3>// Evolución Two-Stage · Proponer regiones → Clasificar</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="620" height="100" viewBox="0 0 620 100" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Timeline boxes -->
+            <rect x="5" y="25" width="100" height="50" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
+            <text x="55" y="45" text-anchor="middle" fill="#f7c86e" font-size="9" font-weight="bold">R-CNN</text>
+            <text x="55" y="58" text-anchor="middle" fill="#7070a0" font-size="7.5">2014 · Girshick</text>
+            <text x="55" y="70" text-anchor="middle" fill="#7070a0" font-size="7">Selective Search</text>
+            <line x1="105" y1="50" x2="128" y2="50" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="128,46 134,50 128,54" fill="#252535"/>
+
+            <rect x="134" y="25" width="105" height="50" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
+            <text x="186" y="45" text-anchor="middle" fill="#f7c86e" font-size="9" font-weight="bold">Fast R-CNN</text>
+            <text x="186" y="58" text-anchor="middle" fill="#7070a0" font-size="7.5">2015 · Girshick</text>
+            <text x="186" y="70" text-anchor="middle" fill="#7070a0" font-size="7">RoI Pooling</text>
+            <line x1="239" y1="50" x2="262" y2="50" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="262,46 268,50 262,54" fill="#252535"/>
+
+            <rect x="268" y="25" width="115" height="50" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+            <text x="325" y="45" text-anchor="middle" fill="#6ee7f7" font-size="9" font-weight="bold">Faster R-CNN</text>
+            <text x="325" y="58" text-anchor="middle" fill="#7070a0" font-size="7.5">2015 · Ren et al.</text>
+            <text x="325" y="70" text-anchor="middle" fill="#7070a0" font-size="7">RPN integrado</text>
+            <line x1="383" y1="50" x2="406" y2="50" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="406,46 412,50 406,54" fill="#252535"/>
+
+            <rect x="412" y="25" width="90" height="50" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+            <text x="457" y="45" text-anchor="middle" fill="#b06ef7" font-size="9" font-weight="bold">FPN</text>
+            <text x="457" y="58" text-anchor="middle" fill="#7070a0" font-size="7.5">2017 · Lin et al.</text>
+            <text x="457" y="70" text-anchor="middle" fill="#7070a0" font-size="7">Multi-escala</text>
+            <line x1="502" y1="50" x2="525" y2="50" stroke="#252535" stroke-width="1.5"/>
+            <polygon points="525,46 531,50 525,54" fill="#252535"/>
+
+            <rect x="531" y="25" width="85" height="50" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+            <text x="573" y="45" text-anchor="middle" fill="#6ee7f7" font-size="9" font-weight="bold">Mask R-CNN</text>
+            <text x="573" y="58" text-anchor="middle" fill="#7070a0" font-size="7.5">2017 · He et al.</text>
+            <text x="573" y="70" text-anchor="middle" fill="#7070a0" font-size="7">+ Segmentación</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Sub-cards for each model -->
+      <div style="padding: 0 1.5rem 1.5rem;" class="sub-cards">
+
+        <div class="sub-card">
+          <div class="sub-card-header">
+            <div><div class="sub-card-year">// 2014</div><div class="sub-card-title">R-CNN</div></div>
+            <span class="badge badge-gold">Pionero</span>
+          </div>
+          <div class="sub-card-body">
+            <div class="sub-card-desc">Extrae ~2000 propuestas de región con <em>Selective Search</em>, redimensiona cada una a 227×227 y la pasa por una CNN (AlexNet/VGG) para extraer features. Luego clasifica con SVMs por clase y refina cajas con regresores lineales. <strong>Problema:</strong> muy lento (~49s/imagen) ya que ejecuta la CNN por cada región.</div>
+            <pre style="font-size:0.7rem;"><span class="cm"># R-CNN conceptual - ya no se usa directamente</span>
+<span class="cm"># selectivesearch + torchvision</span>
+<span class="kw">import</span> selectivesearch
+_, regions = selectivesearch.<span class="fn">selective_search</span>(img, scale=<span class="nb">500</span>)
+<span class="cm"># Por cada región: warp → CNN → SVM → bbox regressor</span></pre>
+          </div>
+        </div>
+
+        <div class="sub-card">
+          <div class="sub-card-header">
+            <div><div class="sub-card-year">// 2015</div><div class="sub-card-title">Fast R-CNN</div></div>
+            <span class="badge badge-cyan">RoI Pooling</span>
+          </div>
+          <div class="sub-card-body">
+            <div class="sub-card-desc">Pasa la imagen entera por la CNN <em>una sola vez</em> para obtener un feature map. Luego proyecta las propuestas de región (aún de Selective Search) al feature map usando <em>RoI Pooling</em>, extrayendo un vector de tamaño fijo por región. Clasifica y regresa la caja en un solo paso. 25× más rápido que R-CNN.</div>
+            <pre style="font-size:0.7rem;"><span class="kw">from</span> torchvision.ops <span class="kw">import</span> roi_pool, roi_align
+
+<span class="cm"># feature_map: [B, C, H, W] — imagen completa</span>
+<span class="cm"># boxes: [[x1,y1,x2,y2], ...] propuestas de región</span>
+pooled = <span class="fn">roi_align</span>(
+    feature_map, boxes,
+    output_size=(<span class="nb">7</span>,<span class="nb">7</span>),
+    spatial_scale=<span class="nb">1</span>/<span class="nb">32</span>
+)  <span class="cm"># → [N, C, 7, 7]</span></pre>
+          </div>
+        </div>
+
+        <div class="sub-card">
+          <div class="sub-card-header">
+            <div><div class="sub-card-year">// 2015</div><div class="sub-card-title">Faster R-CNN</div></div>
+            <span class="badge badge-cyan">End-to-End</span>
+          </div>
+          <div class="sub-card-body">
+            <div class="sub-card-desc">Reemplaza Selective Search con una <em>Region Proposal Network (RPN)</em> que corre sobre el mismo feature map compartido. RPN predice objectness score y coordenadas de anclas. Comparte cómputo entre propuesta y detección, logrando ~5 FPS en GPU con alta precisión. Backbone típico: VGG16 o ResNet-50/101.</div>
+            <pre style="font-size:0.7rem;"><span class="kw">import</span> torchvision
+<span class="cm"># Faster R-CNN preentrenado (COCO)</span>
+model = torchvision.models.detection.<span class="fn">fasterrcnn_resnet50_fpn</span>(
+    weights=<span class="st">'DEFAULT'</span>)
+model.<span class="fn">eval</span>()
+<span class="kw">with</span> torch.no_grad():
+    predictions = <span class="fn">model</span>([image_tensor])
+<span class="cm"># predictions[0]: {'boxes','labels','scores'}</span></pre>
+          </div>
+        </div>
+
+        <div class="sub-card">
+          <div class="sub-card-header">
+            <div><div class="sub-card-year">// 2017</div><div class="sub-card-title">FPN · Feature Pyramid Network</div></div>
+            <span class="badge badge-purple">Multi-Escala</span>
+          </div>
+          <div class="sub-card-body">
+            <div class="sub-card-desc">Construye una <em>pirámide de features</em> combinando el camino descendente (semánticamente rico, baja resolución) con el ascendente (alta resolución, menos semántico) mediante lateral connections de 1×1 conv. Detecta objetos en diferentes niveles de la pirámide según su tamaño. Mejora enormemente la detección de objetos pequeños.</div>
+          </div>
+        </div>
+
+        <div class="sub-card">
+          <div class="sub-card-header">
+            <div><div class="sub-card-year">// 2017</div><div class="sub-card-title">Mask R-CNN</div></div>
+            <span class="badge badge-purple">Segmentación</span>
+          </div>
+          <div class="sub-card-body">
+            <div class="sub-card-desc">Extiende Faster R-CNN añadiendo una <em>tercera cabeza paralela</em> que predice una máscara binaria de segmentación por cada RoI. Usa <em>RoI Align</em> (en lugar de RoI Pooling) para alineación sub-pixel precisa. Permite detección de instancias y es base de muchos frameworks actuales como Detectron2.</div>
+            <pre style="font-size:0.7rem;"><span class="kw">import</span> torchvision
+model = torchvision.models.detection.<span class="fn">maskrcnn_resnet50_fpn</span>(
+    weights=<span class="st">'DEFAULT'</span>)
+model.<span class="fn">eval</span>()
+<span class="kw">with</span> torch.no_grad():
+    out = <span class="fn">model</span>([img_tensor])
+<span class="cm"># out[0]: {'boxes','labels','scores','masks'}</span>
+masks = out[<span class="nb">0</span>][<span class="st">'masks'</span>]  <span class="cm"># [N,1,H,W] — float</span>
+binary = (masks > <span class="nb">0.5</span>).squeeze(<span class="nb">1</span>)</pre>
+          </div>
+        </div>
+
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Comparativa Two-Stage</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <table class="cmp-table">
+            <tr><th>Modelo</th><th>Velocidad</th><th>mAP COCO</th><th>Innovación clave</th></tr>
+            <tr><td class="cv">R-CNN</td><td>~0.02 FPS</td><td>–</td><td class="ck">Selective Search + CNN</td></tr>
+            <tr><td class="cv">Fast R-CNN</td><td>~0.5 FPS</td><td>–</td><td class="ck">RoI Pooling + multi-task</td></tr>
+            <tr><td class="cv">Faster R-CNN</td><td>~5 FPS</td><td>37.4</td><td class="ck">RPN integrado</td></tr>
+            <tr><td class="cv">FPN</td><td>~5-8 FPS</td><td>40.2</td><td class="ck">Pirámide de features</td></tr>
+            <tr><td class="cv">Mask R-CNN</td><td>~5 FPS</td><td>39.8 (bbox)</td><td class="ck">+ Máscaras de instancia</td></tr>
+          </table>
+          <div class="novelty-box" style="margin-top:1rem;">
+            <strong>Trade-off Two-Stage:</strong> Mayor precisión a costa de velocidad. Ideales para aplicaciones donde la exactitud es crítica (medicina, satélite) y el tiempo real no es requisito estricto.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 5: SINGLE-STAGE
+  ══════════════════════════════════════════ -->
+  <div class="panel" id="panel-singlestage">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2015 → 2023</div>
+          <div class="arch-name">Single-Stage Object Detection</div>
+          <div class="arch-author">Redmon (YOLO·2015), Liu (SSD·2016), Lin (RetinaNet·2017), Ultralytics (YOLOv8·2023)</div>
+          <div class="arch-venue">CVPR · ECCV — Velocidad + Precisión</div>
+        </div>
+        <span class="badge badge-cyan">Tiempo Real</span>
+      </div>
+
+      <!-- Overview diagram -->
+      <div class="diagram-section">
+        <h3>// Paradigma Single-Stage · Dense prediction sin propuestas de región</h3>
+        <div class="diagram-svg-wrap">
+          <svg width="600" height="110" viewBox="0 0 600 110" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+            <!-- Input -->
+            <rect x="5" y="30" width="60" height="50" rx="2" fill="#1a1a26" stroke="#6ee7f7" stroke-width="1"/>
+            <text x="35" y="60" text-anchor="middle" fill="#6ee7f7" font-size="7.5">Imagen</text>
+            <line x1="65" y1="55" x2="88" y2="55" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="88,51 94,55 88,59" fill="#505070"/>
+            <!-- Backbone -->
+            <rect x="94" y="20" width="100" height="70" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
+            <text x="144" y="43" text-anchor="middle" fill="#f7c86e" font-size="8" font-weight="bold">Backbone</text>
+            <text x="144" y="57" text-anchor="middle" fill="#7070a0" font-size="7">DarkNet/VGG</text>
+            <text x="144" y="68" text-anchor="middle" fill="#7070a0" font-size="7">ResNet/CSP</text>
+            <text x="144" y="80" text-anchor="middle" fill="#7070a0" font-size="7">EfficientNet</text>
+            <line x1="194" y1="55" x2="217" y2="55" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="217,51 223,55 217,59" fill="#505070"/>
+            <!-- Neck (FPN/PAN) -->
+            <rect x="223" y="25" width="90" height="60" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+            <text x="268" y="48" text-anchor="middle" fill="#b06ef7" font-size="8" font-weight="bold">Neck</text>
+            <text x="268" y="62" text-anchor="middle" fill="#7070a0" font-size="7">FPN / PANet</text>
+            <text x="268" y="73" text-anchor="middle" fill="#7070a0" font-size="7">Multi-scale</text>
+            <line x1="313" y1="55" x2="336" y2="55" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="336,51 342,55 336,59" fill="#505070"/>
+            <!-- Head -->
+            <rect x="342" y="20" width="110" height="70" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+            <text x="397" y="40" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">Detection Head</text>
+            <text x="397" y="55" text-anchor="middle" fill="#7070a0" font-size="7">Grid S×S</text>
+            <text x="397" y="66" text-anchor="middle" fill="#7070a0" font-size="7">Por celda: B anclas</text>
+            <text x="397" y="77" text-anchor="middle" fill="#7070a0" font-size="7">[cx,cy,w,h,conf,cls]</text>
+            <line x1="452" y1="55" x2="475" y2="55" stroke="#505070" stroke-width="1.5"/>
+            <polygon points="475,51 481,55 475,59" fill="#505070"/>
+            <!-- NMS -->
+            <rect x="481" y="30" width="110" height="50" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
+            <text x="536" y="50" text-anchor="middle" fill="#f7c86e" font-size="8" font-weight="bold">NMS</text>
+            <text x="536" y="63" text-anchor="middle" fill="#7070a0" font-size="7">→ Detecciones finales</text>
+            <!-- Label below -->
+            <text x="300" y="105" text-anchor="middle" fill="#7070a0" font-size="7.5">Una sola pasada hacia adelante → predicción directa en grilla de anclas</text>
+          </svg>
+        </div>
+      </div>
+
+      <div style="padding: 0 1.5rem 1.5rem;" class="sub-cards">
+
+        <div class="sub-card">
+          <div class="sub-card-header">
+            <div><div class="sub-card-year">// 2015</div><div class="sub-card-title">YOLO v1</div></div>
+            <span class="badge badge-gold">You Only Look Once</span>
+          </div>
+          <div class="sub-card-body">
+            <div class="sub-card-desc">Divide la imagen en una <em>grilla S×S</em> (7×7). Cada celda predice B=2 bounding boxes y C=20 probabilidades de clase en un solo forward pass. Backbone de 24 conv + 2 FC. Revolucionó la detección en tiempo real (45 FPS). Limitación: dificultad con objetos pequeños y aglomeraciones.</div>
+            <pre style="font-size:0.7rem;"><span class="cm"># YOLOv1: salida tensor [S, S, B*5 + C]</span>
+<span class="cm"># = [7, 7, 2*5 + 20] = [7, 7, 30]</span>
+<span class="cm"># Loss = λ_coord·loc + conf + λ_noobj·noobj + cls</span>
+
+<span class="cm"># Hoy se usa Ultralytics (compatible v5/v8/v11)</span>
+<span class="kw">from</span> ultralytics <span class="kw">import</span> YOLO
+model = <span class="fn">YOLO</span>(<span class="st">'yolov8n.pt'</span>)
+results = model.<span class="fn">predict</span>(<span class="st">'imagen.jpg'</span>, conf=<span class="nb">0.25</span>)</pre>
+          </div>
+        </div>
+
+        <div class="sub-card">
+          <div class="sub-card-header">
+            <div><div class="sub-card-year">// 2016</div><div class="sub-card-title">SSD · Single Shot MultiBox Detector</div></div>
+            <span class="badge badge-cyan">Multi-Scale</span>
+          </div>
+          <div class="sub-card-body">
+            <div class="sub-card-desc">Predice en <em>múltiples feature maps</em> de diferente resolución (38×38, 19×19, 10×10, 5×5, 3×3, 1×1) usando anclas de diferentes aspect ratios. Backbone VGG16 con capas extras. Elimina la necesidad de upsampling. Excelente balance velocidad/precisión (~59 FPS, mAP 74.3 en VOC).</div>
+          </div>
+        </div>
+
+        <div class="sub-card">
+          <div class="sub-card-header">
+            <div><div class="sub-card-year">// 2017</div><div class="sub-card-title">RetinaNet · Focal Loss</div></div>
+            <span class="badge badge-purple">Focal Loss</span>
+          </div>
+          <div class="sub-card-body">
+            <div class="sub-card-desc">Identifica el problema de <em>desbalance extremo foreground/background</em> en detectores densos (1:1000). Introduce <em>Focal Loss</em> FL(p) = −(1−p)^γ · log(p) que reduce el peso de ejemplos fáciles (background) para enfocarse en casos difíciles. Usa FPN + ResNet. Iguala la precisión de Faster R-CNN manteniendo velocidad de single-stage.</div>
+            <pre style="font-size:0.7rem;"><span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn.functional <span class="kw">as</span> F
+
+<span class="kw">def</span> <span class="fn">focal_loss</span>(pred, target, gamma=<span class="nb">2.0</span>, alpha=<span class="nb">0.25</span>):
+    bce = F.<span class="fn">binary_cross_entropy_with_logits</span>(
+        pred, target, reduction=<span class="st">'none'</span>)
+    p_t = torch.<span class="fn">exp</span>(-bce)
+    focal = alpha * (<span class="nb">1</span> - p_t)**gamma * bce
+    <span class="kw">return</span> focal.<span class="fn">mean</span>()
+
+<span class="cm"># Desde torchvision</span>
+<span class="kw">from</span> torchvision.models.detection <span class="kw">import</span> retinanet_resnet50_fpn
+model = <span class="fn">retinanet_resnet50_fpn</span>(weights=<span class="st">'DEFAULT'</span>)</pre>
+          </div>
+        </div>
+
+        <div class="sub-card">
+          <div class="sub-card-header">
+            <div><div class="sub-card-year">// 2016 → 2023</div><div class="sub-card-title">Versiones Posteriores de YOLO</div></div>
+            <span class="badge badge-cyan">Familia YOLO</span>
+          </div>
+          <div class="sub-card-body">
+            <div class="sub-card-desc" style="margin-bottom:0.75rem;">La familia YOLO ha evolucionado significativamente desde su primera versión, con cada iteración mejorando velocidad, precisión o flexibilidad:</div>
+            <table class="cmp-table">
+              <tr><th>Versión</th><th>Año</th><th>Innovación Principal</th><th>mAP COCO</th></tr>
+              <tr><td class="cv">YOLOv2</td><td class="cy">2016</td><td>Anchor boxes, Batch Norm, multi-scale training</td><td>48.1</td></tr>
+              <tr><td class="cv">YOLOv3</td><td class="cy">2018</td><td>Darknet-53, predicción en 3 escalas, logistic cls</td><td>55.3</td></tr>
+              <tr><td class="cv">YOLOv4</td><td class="cy">2020</td><td>CSPDarknet, PANet, Mish, mosaic augmentation</td><td>65.7</td></tr>
+              <tr><td class="cv">YOLOv5</td><td class="cy">2020</td><td>PyTorch nativo, AutoAnchor, fácil deploy</td><td>63.0</td></tr>
+              <tr><td class="cv">YOLOv7</td><td class="cy">2022</td><td>E-ELAN, auxiliary heads, model re-param</td><td>69.7</td></tr>
+              <tr><td class="cv">YOLOv8</td><td class="cy">2023</td><td>Anchor-free, decoupled head, C2f module</td><td>72.9</td></tr>
+              <tr><td class="cv">YOLOv9/10/11</td><td class="cy">2024</td><td>WIoU, NMS-free (v10), GELAN, PSS (v9)</td><td>73–74+</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Comparativa Single-Stage</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Ventaja clave</div><div class="detail-val">Velocidad en tiempo real</div></div>
+            <div class="detail-item"><div class="detail-label">Limitación histórica</div><div class="detail-val">Objetos pequeños (resuelto con FPN)</div></div>
+            <div class="detail-item"><div class="detail-label">Mejor para producción</div><div class="detail-val">YOLOv8 / YOLOv9</div></div>
+            <div class="detail-item"><div class="detail-label">Benchmark principal</div><div class="detail-val">MS-COCO (val2017)</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Anchor-Based / Anchor-Free</span>
+            <span class="tag highlight">Focal Loss</span>
+            <span class="tag">NMS</span>
+            <span class="tag">Multi-Scale</span>
+            <span class="tag highlight">End-to-End</span>
+            <span class="tag">CSP / C2f</span>
+            <span class="tag">PANet</span>
+          </div>
+          <div class="novelty-box">
+            <strong>Single-Stage vs Two-Stage:</strong><br>
+            Los detectores single-stage tratan la detección como un problema de <em>regresión densa</em> directa, sin etapa de propuestas. Esto los hace significativamente más rápidos pero históricamente menos precisos en objetos pequeños. Con FPN, Focal Loss y arquitecturas anchor-free modernas, esta brecha de precisión se ha cerrado enormemente, haciendo a YOLO y RetinaNet la elección estándar para producción.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 6: TRANSFORMERS
+  ══════════════════════════════════════════ -->
+  <div class="panel" id="panel-transformer">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <div class="arch-year">// 2020 → Presente</div>
+          <div class="arch-name">Transformer-Based Detection</div>
+          <div class="arch-author">Carion et al. (DETR·2020), Zhu et al. (Deformable DETR·2021), Liu et al. (Swin·2021)</div>
+          <div class="arch-venue">ECCV · ICLR · NeurIPS — Atención global sin anclas</div>
+        </div>
+        <span class="badge badge-purple">Attention</span>
+      </div>
+      <div class="card-body-grid">
+        <div class="diagram-section">
+          <h3>// Arquitectura DETR · CNN + Encoder-Decoder Transformer</h3>
+          <div class="diagram-svg-wrap">
+            <svg width="580" height="260" viewBox="0 0 580 260" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono, monospace">
+              <!-- Input image -->
+              <rect x="5" y="90" width="55" height="60" rx="2" fill="#1a1a26" stroke="#252535"/>
+              <text x="32" y="125" text-anchor="middle" fill="#7070a0" font-size="7.5">Imagen</text>
+              <line x1="60" y1="120" x2="80" y2="120" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="80,116 86,120 80,124" fill="#505070"/>
+
+              <!-- Backbone CNN -->
+              <rect x="86" y="80" width="75" height="80" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1.5"/>
+              <text x="123" y="105" text-anchor="middle" fill="#f7c86e" font-size="8" font-weight="bold">Backbone</text>
+              <text x="123" y="118" text-anchor="middle" fill="#7070a0" font-size="7">ResNet-50</text>
+              <text x="123" y="130" text-anchor="middle" fill="#7070a0" font-size="7">H/32 × W/32</text>
+              <text x="123" y="142" text-anchor="middle" fill="#f7c86e" font-size="7">× 2048 ch</text>
+              <line x1="161" y1="120" x2="181" y2="120" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="181,116 187,120 181,124" fill="#505070"/>
+
+              <!-- 1x1 Conv reduction -->
+              <rect x="187" y="96" width="48" height="48" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+              <text x="211" y="117" text-anchor="middle" fill="#b06ef7" font-size="7.5">1×1 Conv</text>
+              <text x="211" y="129" text-anchor="middle" fill="#7070a0" font-size="7">→ 256 ch</text>
+              <line x1="235" y1="120" x2="255" y2="120" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="255,116 261,120 255,124" fill="#505070"/>
+
+              <!-- Positional encoding + flatten -->
+              <rect x="261" y="30" width="90" height="40" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1"/>
+              <text x="306" y="47" text-anchor="middle" fill="#6ee7f7" font-size="7.5">Positional</text>
+              <text x="306" y="60" text-anchor="middle" fill="#6ee7f7" font-size="7.5">Encoding</text>
+              <line x1="306" y1="70" x2="306" y2="96" stroke="#252535" stroke-width="1" stroke-dasharray="4,3"/>
+              <polygon points="302,96 306,102 310,96" fill="#252535"/>
+
+              <!-- Transformer Encoder -->
+              <rect x="261" y="102" width="90" height="36" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+              <text x="306" y="117" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">Encoder</text>
+              <text x="306" y="130" text-anchor="middle" fill="#7070a0" font-size="7">6× Self-Attn</text>
+              <line x1="351" y1="120" x2="371" y2="120" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="371,116 377,120 371,124" fill="#505070"/>
+
+              <!-- Object queries -->
+              <rect x="377" y="165" width="90" height="34" rx="3" fill="#12121a" stroke="#f7c86e" stroke-width="1"/>
+              <text x="422" y="180" text-anchor="middle" fill="#f7c86e" font-size="7.5">Object Queries</text>
+              <text x="422" y="192" text-anchor="middle" fill="#7070a0" font-size="7">N=100 learnable</text>
+              <line x1="422" y1="165" x2="422" y2="145" stroke="#252535" stroke-width="1" stroke-dasharray="4,3"/>
+              <polygon points="418,145 422,139 426,145" fill="#252535"/>
+
+              <!-- Transformer Decoder -->
+              <rect x="377" y="102" width="90" height="36" rx="3" fill="#12121a" stroke="#b06ef7" stroke-width="1.5"/>
+              <text x="422" y="117" text-anchor="middle" fill="#b06ef7" font-size="8" font-weight="bold">Decoder</text>
+              <text x="422" y="130" text-anchor="middle" fill="#7070a0" font-size="7">6× Cross-Attn</text>
+              <line x1="467" y1="120" x2="487" y2="120" stroke="#505070" stroke-width="1.5"/>
+              <polygon points="487,116 493,120 487,124" fill="#505070"/>
+
+              <!-- FFN heads -->
+              <rect x="493" y="90" width="82" height="60" rx="3" fill="#12121a" stroke="#6ee7f7" stroke-width="1.5"/>
+              <text x="534" y="108" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">FFN Heads</text>
+              <text x="534" y="120" text-anchor="middle" fill="#7070a0" font-size="7">Class MLP</text>
+              <text x="534" y="132" text-anchor="middle" fill="#7070a0" font-size="7">BBox MLP</text>
+              <text x="534" y="144" text-anchor="middle" fill="#f7c86e" font-size="7">N predicciones</text>
+
+              <!-- Hungarian matching + no-object -->
+              <rect x="261" y="195" width="315" height="55" rx="3" fill="#12121a" stroke="#252535" stroke-width="1"/>
+              <text x="418" y="215" text-anchor="middle" fill="#6ee7f7" font-size="8" font-weight="bold">Entrenamiento: Hungarian Matching</text>
+              <text x="418" y="230" text-anchor="middle" fill="#7070a0" font-size="7.5">Asignación bipartita óptima entre N predicciones y GT boxes</text>
+              <text x="418" y="243" text-anchor="middle" fill="#7070a0" font-size="7">Predicciones sin objeto → clase especial ∅  (no-object)</text>
+
+              <!-- Variants -->
+              <rect x="5" y="195" width="250" height="55" rx="3" fill="#12121a" stroke="#252535"/>
+              <text x="130" y="213" text-anchor="middle" fill="#b06ef7" font-size="8" font-weight="bold">Variantes</text>
+              <text x="130" y="227" text-anchor="middle" fill="#7070a0" font-size="7">Deformable DETR: atención en puntos de referencia</text>
+              <text x="130" y="239" text-anchor="middle" fill="#7070a0" font-size="7">DAB-DETR / DN-DETR: queries dinámicos</text>
+              <text x="130" y="251" text-anchor="middle" fill="#7070a0" font-size="7">RT-DETR: tiempo real con encoder híbrido</text>
+            </svg>
+          </div>
+        </div>
+        <div class="code-section">
+          <h3>// Python · DETR con HuggingFace Transformers</h3>
+          <pre><span class="kw">from</span> transformers <span class="kw">import</span> (
+    DetrImageProcessor,
+    DetrForObjectDetection
+)
+<span class="kw">import</span> torch
+<span class="kw">from</span> PIL <span class="kw">import</span> Image
+<span class="kw">import</span> requests
+
+<span class="cm"># Cargar modelo preentrenado COCO</span>
+processor = DetrImageProcessor.<span class="fn">from_pretrained</span>(
+    <span class="st">"facebook/detr-resnet-50"</span>)
+model = DetrForObjectDetection.<span class="fn">from_pretrained</span>(
+    <span class="st">"facebook/detr-resnet-50"</span>)
+
+<span class="cm"># Inferencia</span>
+image = Image.<span class="fn">open</span>(<span class="st">"imagen.jpg"</span>)
+inputs = <span class="fn">processor</span>(
+    images=image, return_tensors=<span class="st">"pt"</span>)
+
+<span class="kw">with</span> torch.no_grad():
+    outputs = <span class="fn">model</span>(**inputs)
+
+<span class="cm"># Post-procesar (filtrar por umbral)</span>
+target_sizes = torch.<span class="fn">tensor</span>([image.size[::-<span class="nb">1</span>]])
+results = processor.<span class="fn">post_process_object_detection</span>(
+    outputs,
+    target_sizes=target_sizes,
+    threshold=<span class="nb">0.9</span>
+)[<span class="nb">0</span>]
+
+<span class="kw">for</span> score, label, box <span class="kw">in</span> zip(
+    results[<span class="st">"scores"</span>],
+    results[<span class="st">"labels"</span>],
+    results[<span class="st">"boxes"</span>]
+):
+    box = [<span class="fn">round</span>(i, <span class="nb">2</span>) <span class="kw">for</span> i <span class="kw">in</span> box.<span class="fn">tolist</span>()]
+    <span class="fn">print</span>(<span class="kw">f</span><span class="st">"{model.config.id2label[label.item()]}"</span>
+          <span class="kw">f</span><span class="st">" {score:.2f} → {box}"</span>)</pre>
+        </div>
+      </div>
+      <div class="details-section">
+        <button class="details-toggle" onclick="toggleDetails(this)">
+          <span class="toggle-label">▸ Detalles de la arquitectura</span>
+          <span class="arrow">›</span>
+        </button>
+        <div class="details-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Propuestas de región</div><div class="detail-val">No (anchor-free)</div></div>
+            <div class="detail-item"><div class="detail-label">NMS</div><div class="detail-val">No necesita</div></div>
+            <div class="detail-item"><div class="detail-label">Object Queries</div><div class="detail-val">N=100 vectores aprendibles</div></div>
+            <div class="detail-item"><div class="detail-label">Convergencia</div><div class="detail-val">Lenta (~500 epochs)</div></div>
+            <div class="detail-item"><div class="detail-label">Backbone</div><div class="detail-val">ResNet-50/101 / Swin-T</div></div>
+            <div class="detail-item"><div class="detail-label">mAP COCO (DETR-R50)</div><div class="detail-val">42.0 AP</div></div>
+          </div>
+          <div class="tag-list">
+            <span class="tag highlight">Self-Attention</span>
+            <span class="tag highlight">Cross-Attention</span>
+            <span class="tag highlight">Hungarian Matching</span>
+            <span class="tag">Object Queries</span>
+            <span class="tag">Positional Encoding 2D</span>
+            <span class="tag">Sin NMS</span>
+            <span class="tag">Sin Anclas</span>
+            <span class="tag highlight">Deformable Attention</span>
+          </div>
+          <div class="novelty-box">
+            <strong>¿Qué hizo revolucionario a DETR?</strong><br>
+            DETR fue el primer detector completamente <em>end-to-end</em> sin necesidad de anclas, NMS ni propuestas de región. Los <em>object queries</em> son vectores aprendibles que compiten mediante atención cruzada por las distintas entidades en la imagen. El <em>Hungarian matching</em> durante entrenamiento asegura asignación óptima sin duplicados. Sus variantes posteriores (Deformable DETR, DN-DETR, RT-DETR) resolvieron la lenta convergencia y permitieron detección en tiempo real con la misma filosofía sin anclas.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /panels -->
+  </div><!-- /content-area -->
+</div><!-- /app-shell -->
+
+<script>
+  /* LIGHTBOX */
+  (function() {
+    const lb = document.getElementById('lightbox');
+    const lbView = document.getElementById('lightbox-viewport');
+    const lbTitle = document.getElementById('lightbox-title');
+    const lbCounter = document.getElementById('lightbox-counter');
+    const lbPrev = document.getElementById('lb-prev');
+    const lbNext = document.getElementById('lb-next');
+    const lbClose = document.getElementById('lb-close');
+    const lbZoomIn = document.getElementById('lb-zoom-in');
+    const lbZoomOut = document.getElementById('lb-zoom-out');
+    const lbZoomReset = document.getElementById('lb-zoom-reset');
+    let currentWraps = [], currentIdx = 0, scale = 1, activeSvg = null;
+
+    function getWraps() {
+      const panel = document.querySelector('.panel.active');
+      return panel ? Array.from(panel.querySelectorAll('.diagram-svg-wrap')) : [];
+    }
+    function setScale(s) {
+      scale = Math.max(0.3, Math.min(4, s));
+      if (activeSvg) activeSvg.style.transform = `scale(${scale})`;
+      lbZoomReset.textContent = Math.round(scale * 100) + '%';
+    }
+    function openAt(idx) {
+      currentWraps = getWraps();
+      if (!currentWraps.length) return;
+      currentIdx = Math.max(0, Math.min(idx, currentWraps.length - 1));
+      const wrap = currentWraps[currentIdx];
+      const svgs = wrap.querySelectorAll('svg');
+      lbView.innerHTML = '<span id="lightbox-hint">scroll para mover · rueda para zoom · Esc para cerrar</span>';
+      const scaler = document.createElement('div');
+      scaler.style.cssText = 'display:flex;flex-direction:column;align-items:center;transition:transform 0.15s ease;transform-origin:center top;';
+      svgs.forEach(svg => {
+        const clone = svg.cloneNode(true);
+        clone.style.width = svg.getAttribute('width') + 'px';
+        clone.style.height = svg.getAttribute('height') + 'px';
+        clone.style.maxWidth = 'none'; clone.style.maxHeight = 'none';
+        clone.style.display = 'block'; clone.style.margin = '0 auto 1.5rem';
+        scaler.appendChild(clone);
+      });
+      lbView.insertBefore(scaler, lbView.lastElementChild);
+      activeSvg = scaler;
+      const h3 = wrap.closest('.diagram-section')?.querySelector('h3');
+      lbTitle.textContent = h3 ? h3.textContent : '// Diagrama';
+      lbCounter.textContent = currentWraps.length > 1 ? `${currentIdx + 1} / ${currentWraps.length}` : '';
+      lbPrev.disabled = currentIdx === 0;
+      lbNext.disabled = currentIdx === currentWraps.length - 1;
+      scale = 1; setScale(1);
+      lb.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function close() {
+      lb.classList.remove('open');
+      document.body.style.overflow = '';
+      lbView.innerHTML = '<span id="lightbox-hint">scroll para mover · rueda para zoom · Esc para cerrar</span>';
+      activeSvg = null;
+    }
+    document.addEventListener('click', function(e) {
+      const wrap = e.target.closest('.diagram-svg-wrap');
+      if (!wrap || lb.contains(e.target)) return;
+      const wraps = getWraps();
+      const idx = wraps.indexOf(wrap);
+      openAt(idx >= 0 ? idx : 0);
+    });
+    lbClose.addEventListener('click', close);
+    lb.addEventListener('click', function(e) { if (e.target === lb) close(); });
+    lbPrev.addEventListener('click', () => openAt(currentIdx - 1));
+    lbNext.addEventListener('click', () => openAt(currentIdx + 1));
+    lbZoomIn.addEventListener('click', () => setScale(scale * 1.25));
+    lbZoomOut.addEventListener('click', () => setScale(scale / 1.25));
+    lbZoomReset.addEventListener('click', () => setScale(1));
+    lbView.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      setScale(scale * (e.deltaY < 0 ? 1.1 : 0.9));
+    }, { passive: false });
+    document.addEventListener('keydown', function(e) {
+      if (!lb.classList.contains('open')) return;
+      if (e.key === 'Escape') { close(); e.stopPropagation(); }
+      if (e.key === 'ArrowLeft' && !lbPrev.disabled) openAt(currentIdx - 1);
+      if (e.key === 'ArrowRight' && !lbNext.disabled) openAt(currentIdx + 1);
+      if (e.key === '+' || e.key === '=') setScale(scale * 1.2);
+      if (e.key === '-') setScale(scale / 1.2);
+      if (e.key === '0') setScale(1);
+    });
+  })();
+
+  const TABS = ['template','features','siamese','twostage','singlestage','transformer'];
+
+  function activateTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    activateTab(btn.dataset.tab);
+    document.querySelectorAll('#tabs-mobile .tab-btn').forEach(b => {
+      if (b.dataset.tab === btn.dataset.tab) b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    });
+  });
+
+  function toggleDetails(btn) {
+    const body = btn.nextElementSibling;
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    btn.classList.toggle('open', !isOpen);
+    btn.querySelector('.toggle-label').textContent = (isOpen ? '▸' : '▾') + (btn.querySelector('.toggle-label').textContent.includes('Comparativa') ? ' Comparativa' : ' Detalles de la arquitectura');
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (['ArrowRight','ArrowLeft','ArrowDown','ArrowUp'].includes(e.key)) {
+      const activePanel = document.querySelector('.panel.active');
+      if (!activePanel) return;
+      const cur = activePanel.id.replace('panel-', '');
+      const idx = TABS.indexOf(cur);
+      const next = (e.key === 'ArrowRight' || e.key === 'ArrowDown')
+        ? TABS[Math.min(idx + 1, TABS.length - 1)]
+        : TABS[Math.max(idx - 1, 0)];
+      activateTab(next);
+    }
+  });
+
+  (function(){
+    const stored = localStorage.getItem('det-theme');
+    const isDark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (!isDark) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.getElementById('theme-icon').textContent = '🌙';
+      document.getElementById('theme-label').textContent = 'Modo oscuro';
+    }
+  })();
+
+  function toggleTheme() {
+    const root = document.documentElement;
+    const isLight = root.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      root.removeAttribute('data-theme');
+      document.getElementById('theme-icon').textContent = '☀️';
+      document.getElementById('theme-label').textContent = 'Modo claro';
+      localStorage.setItem('det-theme', 'dark');
+    } else {
+      root.setAttribute('data-theme', 'light');
+      document.getElementById('theme-icon').textContent = '🌙';
+      document.getElementById('theme-label').textContent = 'Modo oscuro';
+      localStorage.setItem('det-theme', 'light');
+    }
+  }
+</script>
+</body>
+</html>
