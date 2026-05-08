@@ -6,898 +6,523 @@
 <title>DVC para investigación reproducible</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg: #12121f;
-  --card: #ffffff;
-  --border: #e2e0da;
-  --text: #1a1a1a;
-  --muted: #6b6b6b;
-  --code-bg: #f0eee8;
+  --bg: #12121f; --card: #ffffff; --border: #e2e0da;
+  --text: #1a1a1a; --muted: #6b6b6b; --code-bg: #f0eee8;
   --mono: 'Courier New', monospace;
-  /* fluid type scale */
-  --t-xs:  clamp(9px,  1.4vw, 11px);
-  --t-sm:  clamp(11px, 1.6vw, 13px);
-  --t-md:  clamp(12px, 1.8vw, 14px);
-  --t-lg:  clamp(15px, 2.2vw, 18px);
-  --t-xl:  clamp(18px, 2.8vw, 24px);
-  --t-h2:  clamp(16px, 2.8vw, 22px);
-  --gap:   clamp(8px, 1.5vw, 20px);
-  --pad:   clamp(14px, 3vw, 40px);
+  --t-xs: clamp(9px, 1.35vw, 11px);
+  --t-sm: clamp(11px, 1.55vw, 13px);
+  --t-md: clamp(12px, 1.75vw, 14px);
+  --t-h2: clamp(15px, 2.6vw, 21px);
+  --gap:  clamp(8px, 1.4vw, 18px);
+  --pad:  clamp(14px, 2.8vw, 38px);
 }
-
-html, body {
-  height: 100%; width: 100%;
-  background: var(--bg);
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: var(--text);
-}
-
-/* ── outer wrapper ── */
-#deck {
-  width: 100vw; height: 100vh;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: clamp(8px, 2vh, 24px) clamp(8px, 2vw, 24px);
-  gap: clamp(6px, 1.2vh, 14px);
-}
-
-/* ── progress ── */
-#progress-bar {
-  width: 100%; max-width: 920px;
-  height: 3px; background: rgba(255,255,255,0.1);
-  border-radius: 99px; overflow: hidden; flex-shrink: 0;
-}
-#progress-fill {
-  height: 100%; background: #6c63ff;
-  border-radius: 99px; transition: width .3s ease;
-}
-
-/* ── slide card ── */
-.slide {
-  display: none;
-  width: 100%; max-width: 920px;
-  background: var(--card);
-  border-radius: clamp(8px, 1.5vw, 16px);
-  padding: var(--pad) calc(var(--pad) * 1.1);
-  position: relative; overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-  animation: fadeIn .2s ease;
-  /* fill available vertical space */
-  flex: 1 1 0; min-height: 0;
-  overflow-y: auto;
-}
-.slide.active { display: flex; flex-direction: column; }
-@keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-
-.slide::before {
-  content:''; position:absolute; left:0; top:0; bottom:0;
-  width: clamp(4px,0.6vw,6px); border-radius: 16px 0 0 16px;
-}
-.slide.purple::before { background:#6c63ff; }
-.slide.teal::before   { background:#1d9e75; }
-.slide.blue::before   { background:#185fa5; }
-.slide.amber::before  { background:#ef9f27; }
-.slide.coral::before  { background:#d85a30; }
-.slide.pink::before   { background:#c2185b; }
-
-/* ── slide num ── */
-.slide-num {
-  position:absolute; top: clamp(8px,1.2vh,14px); right: clamp(10px,1.5vw,18px);
-  font-size: var(--t-xs); color:#bbb;
-}
-
-/* ── tags ── */
-.tag {
-  display:inline-block; font-size: var(--t-xs); font-weight:600;
-  padding: 2px 10px; border-radius:99px; margin-bottom: clamp(4px,0.8vh,10px);
-  letter-spacing:.03em; flex-shrink:0;
-}
-.tag.purple { background:#eeedfe; color:#534ab7; }
-.tag.teal   { background:#e1f5ee; color:#0f6e56; }
-.tag.blue   { background:#e6f1fb; color:#185fa5; }
-.tag.amber  { background:#faeeda; color:#854f0b; }
-.tag.coral  { background:#faece7; color:#993c1d; }
-.tag.pink   { background:#fce4ec; color:#880e4f; }
-
-/* ── typography ── */
-h2 {
-  font-size: var(--t-h2); font-weight:700;
-  line-height:1.25; margin-bottom: clamp(6px,1vh,14px);
-  flex-shrink:0;
-}
-h3 { font-size: var(--t-sm); font-weight:700; margin-bottom: clamp(2px,0.4vh,5px); }
-p, li { font-size: var(--t-md); line-height:1.65; color:#333; }
-ul { padding-left:1.1rem; }
-li { margin-bottom: 1px; }
-hr { border:none; border-top:1px solid var(--border); margin: clamp(6px,0.8vh,12px) 0; flex-shrink:0; }
+html, body { height:100%; width:100%; background:var(--bg); overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text); }
+#deck { width:100vw; height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:clamp(8px,2vh,22px) clamp(8px,2vw,22px); gap:clamp(6px,1.1vh,12px); }
+#progress-bar { width:100%; max-width:940px; height:3px;
+  background:rgba(255,255,255,0.1); border-radius:99px; overflow:hidden; flex-shrink:0; }
+#progress-fill { height:100%; background:#6c63ff; border-radius:99px; transition:width .3s ease; }
+.slide { display:none; width:100%; max-width:940px; background:var(--card);
+  border-radius:clamp(8px,1.4vw,15px); padding:var(--pad) calc(var(--pad)*1.1);
+  position:relative; overflow:hidden; box-shadow:0 20px 55px rgba(0,0,0,0.42);
+  animation:fadeIn .2s ease; flex:1 1 0; min-height:0; overflow-y:auto; }
+.slide.active { display:flex; flex-direction:column; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.slide::before { content:''; position:absolute; left:0; top:0; bottom:0;
+  width:clamp(4px,0.55vw,6px); border-radius:15px 0 0 15px; }
+.slide.purple::before { background:#6c63ff; } .slide.teal::before   { background:#1d9e75; }
+.slide.blue::before   { background:#185fa5; } .slide.amber::before  { background:#ef9f27; }
+.slide.coral::before  { background:#d85a30; } .slide.pink::before   { background:#c2185b; }
+.slide.indigo::before { background:#3949ab; }
+.slide-num { position:absolute; top:clamp(8px,1.1vh,13px); right:clamp(10px,1.4vw,17px);
+  font-size:var(--t-xs); color:#bbb; }
+.tag { display:inline-block; font-size:var(--t-xs); font-weight:600;
+  padding:2px 10px; border-radius:99px; margin-bottom:clamp(4px,0.7vh,9px);
+  letter-spacing:.03em; flex-shrink:0; }
+.tag.purple{background:#eeedfe;color:#534ab7;} .tag.teal{background:#e1f5ee;color:#0f6e56;}
+.tag.blue{background:#e6f1fb;color:#185fa5;}   .tag.amber{background:#faeeda;color:#854f0b;}
+.tag.coral{background:#faece7;color:#993c1d;}  .tag.pink{background:#fce4ec;color:#880e4f;}
+.tag.indigo{background:#e8eaf6;color:#283593;}
+h2 { font-size:var(--t-h2); font-weight:700; line-height:1.25;
+  margin-bottom:clamp(6px,0.9vh,13px); flex-shrink:0; }
+h3 { font-size:var(--t-sm); font-weight:700; margin-bottom:clamp(2px,0.3vh,5px); }
+p,li { font-size:var(--t-md); line-height:1.65; color:#333; }
+ul,ol { padding-left:1.1rem; } li { margin-bottom:1px; }
+hr { border:none; border-top:1px solid var(--border); margin:clamp(5px,0.7vh,11px) 0; flex-shrink:0; }
 code { font-family:var(--mono); font-size:.9em; background:var(--code-bg); padding:1px 4px; border-radius:4px; }
-ol { padding-left:1.1rem; }
-ol li { margin-bottom:1px; }
-
-/* ── layouts ── */
-.grid2 {
-  display:grid; grid-template-columns:1fr 1fr;
-  gap: var(--gap); flex:1 1 0; min-height:0;
-}
-.grid3 {
-  display:grid; grid-template-columns:1fr 1fr 1fr;
-  gap: var(--gap); flex:1 1 0; min-height:0;
-}
-.col { display:flex; flex-direction:column; gap: clamp(5px,0.8vh,10px); }
-
-.box {
-  background:#f8f7f4; border:1px solid var(--border);
-  border-radius: clamp(5px,0.8vw,8px);
-  padding: clamp(7px,1.1vh,12px) clamp(8px,1.2vw,14px);
-}
-.box.accent-purple { border-left: 3px solid #6c63ff; background:#f9f8ff; }
-.box.accent-teal   { border-left: 3px solid #1d9e75; background:#f4fdf9; }
-.box.accent-blue   { border-left: 3px solid #185fa5; background:#f3f8fd; }
-.box.accent-amber  { border-left: 3px solid #ef9f27; background:#fffaf3; }
-.box.accent-coral  { border-left: 3px solid #d85a30; background:#fff6f3; }
-.box.accent-pink   { border-left: 3px solid #c2185b; background:#fdf3f7; }
-.box.accent-gray   { border-left: 3px solid #888; background:#f8f8f8; }
-
-/* ── tool comparison card ── */
-.tool-card {
-  background:#fff; border:1px solid var(--border);
-  border-radius: clamp(6px,1vw,10px);
-  padding: clamp(8px,1.2vh,14px) clamp(8px,1.2vw,14px);
-  display:flex; flex-direction:column; gap:5px;
-}
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); flex:1 1 0; min-height:0; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:var(--gap); flex:1 1 0; min-height:0; }
+.col { display:flex; flex-direction:column; gap:clamp(5px,0.7vh,9px); }
+.box { background:#f8f7f4; border:1px solid var(--border);
+  border-radius:clamp(5px,0.7vw,8px); padding:clamp(7px,1vh,11px) clamp(8px,1.1vw,13px); }
+.box p { font-size:var(--t-sm); }
+.ap{border-left:3px solid #6c63ff;background:#f9f8ff;} .at{border-left:3px solid #1d9e75;background:#f4fdf9;}
+.ab{border-left:3px solid #185fa5;background:#f3f8fd;} .aa{border-left:3px solid #ef9f27;background:#fffaf3;}
+.ac{border-left:3px solid #d85a30;background:#fff6f3;} .ak{border-left:3px solid #c2185b;background:#fdf3f7;}
+.ai{border-left:3px solid #3949ab;background:#eef0fc;} .ag{border-left:3px solid #888;background:#f8f8f8;}
+.tools-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:var(--gap); flex:0 0 auto; }
+.tool-card { background:#fff; border:1px solid var(--border);
+  border-radius:clamp(6px,0.9vw,10px); padding:clamp(8px,1.1vh,13px) clamp(8px,1.1vw,13px);
+  display:flex; flex-direction:column; gap:5px; }
 .tool-header { display:flex; align-items:center; gap:7px; }
-.tool-icon { font-size: clamp(18px,2.5vw,26px); line-height:1; }
-.tool-name { font-size: var(--t-md); font-weight:700; }
-.tool-badge {
-  font-size: var(--t-xs); padding:2px 7px; border-radius:99px;
-  font-weight:600; margin-left:auto;
-}
-.tb-data    { background:#e1f5ee; color:#0f6e56; }
-.tb-exp     { background:#e6f1fb; color:#185fa5; }
-.tb-both    { background:#eeedfe; color:#534ab7; }
-.tb-platform{ background:#faeeda; color:#854f0b; }
-.tool-desc { font-size: var(--t-sm); color:#555; line-height:1.5; }
+.tool-icon { font-size:clamp(16px,2vw,22px); line-height:1; }
+.tool-name { font-size:var(--t-md); font-weight:700; }
+.tool-badge { font-size:var(--t-xs); padding:2px 7px; border-radius:99px; font-weight:600; margin-left:auto; white-space:nowrap; }
+.tb-d{background:#e1f5ee;color:#0f6e56;} .tb-e{background:#e6f1fb;color:#185fa5;} .tb-b{background:#eeedfe;color:#534ab7;}
+.tool-desc { font-size:var(--t-sm); color:#555; line-height:1.5; }
 .tool-tags { display:flex; flex-wrap:wrap; gap:4px; }
-.chip {
-  font-size: var(--t-xs); padding:1px 7px; border-radius:99px;
-  background:#f0eee8; color:#555; border:1px solid var(--border);
-}
-
-/* ── comparison table ── */
-.comp-table { width:100%; border-collapse:collapse; font-size: var(--t-sm); margin-top: clamp(4px,0.8vh,10px); }
-.comp-table th {
-  text-align:left; font-weight:700; font-size: var(--t-xs); color:var(--muted);
-  padding: clamp(3px,0.5vh,6px) clamp(5px,0.8vw,10px);
-  border-bottom:2px solid var(--border); white-space:nowrap;
-}
-.comp-table td {
-  padding: clamp(3px,0.5vh,6px) clamp(5px,0.8vw,10px);
-  border-bottom:1px solid #f0eee8; vertical-align:middle;
-}
+.chip { font-size:var(--t-xs); padding:1px 7px; border-radius:99px; background:#f0eee8; color:#555; border:1px solid var(--border); }
+.comp-table { width:100%; border-collapse:collapse; font-size:var(--t-sm); margin-top:clamp(5px,0.8vh,10px); flex-shrink:0; }
+.comp-table th { text-align:left; font-weight:700; font-size:var(--t-xs); color:var(--muted);
+  padding:clamp(3px,0.4vh,5px) clamp(5px,0.7vw,9px); border-bottom:2px solid var(--border); white-space:nowrap; }
+.comp-table td { padding:clamp(3px,0.4vh,5px) clamp(5px,0.7vw,9px); border-bottom:1px solid #f0eee8; vertical-align:middle; }
 .comp-table tr:last-child td { border-bottom:none; }
 .dot { display:inline-block; width:8px; height:8px; border-radius:50%; }
-.dot.g  { background:#1d9e75; }
-.dot.y  { background:#ef9f27; }
-.dot.r  { background:#e53935; }
-
-/* ── code blocks ── */
-pre.cmd {
-  background:#1e1e2e; color:#cdd6f4; border-radius: clamp(5px,0.8vw,8px);
-  padding: clamp(6px,0.9vh,10px) clamp(8px,1.2vw,14px);
-  font-family:var(--mono); font-size: var(--t-xs);
-  line-height:1.7; margin: clamp(3px,0.5vh,8px) 0;
-  overflow-x:auto; flex-shrink:0;
-}
-pre.cmd .kw  { color:#89b4fa; }
-pre.cmd .arg { color:#a6e3a1; }
-pre.cmd .str { color:#fab387; }
-pre.cmd .cmt { color:#6c7086; font-style:italic; }
-
-/* ── pipeline arrows ── */
-.pipeline {
-  display:flex; align-items:center; flex-wrap:wrap;
-  gap: clamp(3px,0.6vw,7px); margin-top: clamp(4px,0.7vh,10px); flex-shrink:0;
-}
-.pstep {
-  background:#f0eee8; border:1px solid var(--border); border-radius:6px;
-  padding: clamp(3px,0.5vh,6px) clamp(7px,1vw,13px);
-  font-size: var(--t-xs); font-weight:600; white-space:nowrap;
-}
-.parr { color:#bbb; font-size:1rem; }
-
-/* ── experiment table ── */
-table.exp { width:100%; border-collapse:collapse; font-size: var(--t-sm); margin-top: clamp(4px,0.7vh,10px); }
-table.exp th { text-align:left; font-weight:700; font-size: var(--t-xs); color:var(--muted); padding: clamp(3px,0.5vh,6px) 8px; border-bottom:2px solid var(--border); }
-table.exp td { padding: clamp(3px,0.5vh,6px) 8px; border-bottom:1px solid #f0eee8; }
+.dot.g{background:#1d9e75;} .dot.y{background:#ef9f27;} .dot.r{background:#e53935;}
+pre.cmd { background:#1e1e2e; color:#cdd6f4; border-radius:clamp(5px,0.7vw,8px);
+  padding:clamp(6px,0.85vh,10px) clamp(8px,1.1vw,13px); font-family:var(--mono);
+  font-size:var(--t-xs); line-height:1.7; margin:clamp(3px,0.4vh,7px) 0; overflow-x:auto; flex-shrink:0; }
+pre.cmd .kw{color:#89b4fa;} pre.cmd .arg{color:#a6e3a1;} pre.cmd .str{color:#fab387;} pre.cmd .cmt{color:#6c7086;font-style:italic;}
+.pipeline { display:flex; align-items:center; flex-wrap:wrap;
+  gap:clamp(3px,0.5vw,7px); margin-top:clamp(4px,0.6vh,9px); flex-shrink:0; }
+.pstep { background:#f0eee8; border:1px solid var(--border); border-radius:6px;
+  padding:clamp(3px,0.4vh,5px) clamp(7px,0.9vw,12px); font-size:var(--t-xs); font-weight:600; white-space:nowrap; }
+.parr { color:#bbb; font-size:.95rem; }
+table.exp { width:100%; border-collapse:collapse; font-size:var(--t-sm); margin-top:clamp(4px,0.6vh,9px); }
+table.exp th { text-align:left; font-weight:700; font-size:var(--t-xs); color:var(--muted); padding:clamp(3px,0.4vh,5px) 8px; border-bottom:2px solid var(--border); }
+table.exp td { padding:clamp(3px,0.4vh,5px) 8px; border-bottom:1px solid #f0eee8; }
 table.exp tr:last-child td { border-bottom:none; }
 .badge { display:inline-block; padding:1px 6px; border-radius:99px; font-size:.85em; font-weight:700; }
-.badge.g { background:#eaf3de; color:#3b6d11; }
-.badge.r { background:#fcebeb; color:#a32d2d; }
-
-/* ── controls ── */
-#controls {
-  width:100%; max-width:920px;
-  display:flex; align-items:center; justify-content:space-between;
-  flex-shrink:0;
-}
-#hint { font-size: clamp(9px,1.3vw,11px); color:rgba(255,255,255,0.22); }
-#slide-counter { font-size: clamp(10px,1.5vw,13px); color:rgba(255,255,255,0.4); }
+.badge.g{background:#eaf3de;color:#3b6d11;} .badge.r{background:#fcebeb;color:#a32d2d;}
+.arch-tree { font-family:var(--mono); font-size:var(--t-xs); background:#1e1e2e; color:#cdd6f4;
+  border-radius:8px; padding:clamp(7px,1vh,12px) clamp(10px,1.2vw,16px); line-height:1.8; flex-shrink:0; }
+.arch-tree .dir{color:#89b4fa;} .arch-tree .file{color:#a6e3a1;} .arch-tree .dim{color:#6c7086;}
+#controls { width:100%; max-width:940px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+#hint { font-size:clamp(9px,1.2vw,11px); color:rgba(255,255,255,0.2); }
+#slide-counter { font-size:clamp(10px,1.4vw,13px); color:rgba(255,255,255,0.38); }
 .nav-btns { display:flex; gap:7px; }
-.nav-btn {
-  width: clamp(28px,4vw,38px); height: clamp(28px,4vw,38px);
-  border-radius:50%; border:1.5px solid rgba(255,255,255,0.18);
-  background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.7);
-  font-size: clamp(12px,1.8vw,16px); cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition:background .15s, border-color .15s;
-}
-.nav-btn:hover { background:rgba(255,255,255,0.14); border-color:rgba(255,255,255,0.4); }
-.nav-btn:disabled { opacity:.22; cursor:default; }
-
-/* ── responsive breakpoints ── */
-@media (max-width: 640px) {
-  .grid2, .grid3 { grid-template-columns:1fr; }
-  .hide-sm { display:none !important; }
-  .tool-card { padding:8px 10px; }
-  pre.cmd { font-size:9px; }
-}
-@media (max-width: 480px) {
-  #hint { display:none; }
-}
+.nav-btn { width:clamp(28px,3.8vw,37px); height:clamp(28px,3.8vw,37px); border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.17); background:rgba(255,255,255,0.06);
+  color:rgba(255,255,255,0.68); font-size:clamp(12px,1.7vw,15px); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition:background .15s,border-color .15s; }
+.nav-btn:hover{background:rgba(255,255,255,0.13);border-color:rgba(255,255,255,0.38);}
+.nav-btn:disabled{opacity:.2;cursor:default;}
+@media (max-width:640px) { .grid2,.grid3,.tools-grid{grid-template-columns:1fr;} pre.cmd{font-size:9px;} }
+@media (max-width:480px) { #hint{display:none;} .tool-badge{display:none;} }
 </style>
 </head>
 <body>
 <div id="deck">
-  <div id="progress-bar"><div id="progress-fill"></div></div>
+<div id="progress-bar"><div id="progress-fill"></div></div>
 
-  <!-- ══════════════════════════════════════
-       SLIDE 0 — Landscape de herramientas
-       ══════════════════════════════════════ -->
-  <div class="slide pink active">
-    <div class="slide-num">01 / 13</div>
-    <span class="tag pink">Herramientas</span>
-    <h2>Landscape: tracking de datos y experimentos</h2>
-
-    <div class="grid2" style="flex:0 0 auto; margin-bottom: var(--gap)">
-      <!-- DVC -->
-      <div class="tool-card">
-        <div class="tool-header">
-          <span class="tool-icon">📦</span>
-          <span class="tool-name">DVC</span>
-          <span class="tool-badge tb-both">datos + experimentos</span>
-        </div>
-        <p class="tool-desc">Versionado de datos sobre Git, pipelines reproducibles como DAG y tracking ligero de experimentos. Open source, sin servidor.</p>
-        <div class="tool-tags">
-          <span class="chip">Git-native</span><span class="chip">pipelines DAG</span><span class="chip">any storage</span><span class="chip">offline</span>
-        </div>
-      </div>
-      <!-- MLflow -->
-      <div class="tool-card">
-        <div class="tool-header">
-          <span class="tool-icon">🔬</span>
-          <span class="tool-name">MLflow</span>
-          <span class="tool-badge tb-exp">experimentos</span>
-        </div>
-        <p class="tool-desc">Tracking de runs, parámetros, métricas y artefactos. UI web para comparar experimentos. Model registry integrado.</p>
-        <div class="tool-tags">
-          <span class="chip">UI web</span><span class="chip">model registry</span><span class="chip">multi-framework</span><span class="chip">auto-logging</span>
-        </div>
-      </div>
-      <!-- W&B -->
-      <div class="tool-card">
-        <div class="tool-header">
-          <span class="tool-icon">🐝</span>
-          <span class="tool-name">Weights & Biases</span>
-          <span class="tool-badge tb-exp">experimentos</span>
-        </div>
-        <p class="tool-desc">Plataforma cloud para tracking en tiempo real, visualizaciones interactivas, sweeps de hiperparámetros y reportes colaborativos.</p>
-        <div class="tool-tags">
-          <span class="chip">cloud</span><span class="chip">sweeps</span><span class="chip">real-time</span><span class="chip">colaborativo</span>
-        </div>
-      </div>
-      <!-- DagsHub -->
-      <div class="tool-card">
-        <div class="tool-header">
-          <span class="tool-icon">🐙</span>
-          <span class="tool-name">DagsHub</span>
-          <span class="tool-badge tb-both">datos + experimentos</span>
-        </div>
-        <p class="tool-desc">GitHub para ML: integra DVC, MLflow y Git en una sola plataforma. Visualiza datos, experimentos y pipelines en la web.</p>
-        <div class="tool-tags">
-          <span class="chip">DVC remoto</span><span class="chip">MLflow UI</span><span class="chip">data storage</span>
-        </div>
-      </div>
-    </div>
-
-    <table class="comp-table">
-      <thead>
-        <tr>
-          <th>Herramienta</th>
-          <th>Datos</th>
-          <th>Experimentos</th>
-          <th>Pipelines</th>
-          <th>UI</th>
-          <th>Offline</th>
-          <th>Ideal para</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>DVC</strong></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot y"></span> CLI</td>
-          <td><span class="dot g"></span></td>
-          <td>Investigación reproducible</td>
-        </tr>
-        <tr>
-          <td><strong>MLflow</strong></td>
-          <td><span class="dot y"></span></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot y"></span></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot g"></span></td>
-          <td>Proyectos de equipo / MLOps</td>
-        </tr>
-        <tr>
-          <td><strong>W&amp;B</strong></td>
-          <td><span class="dot y"></span></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot r"></span></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot r"></span></td>
-          <td>Deep learning / colaboración</td>
-        </tr>
-        <tr>
-          <td><strong>DagsHub</strong></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot g"></span></td>
-          <td><span class="dot r"></span></td>
-          <td>Open source + visibilidad</td>
-        </tr>
-      </tbody>
-    </table>
+<!-- 01 Landscape -->
+<div class="slide pink active">
+  <div class="slide-num">01 / 14</div>
+  <span class="tag pink">Herramientas</span>
+  <h2>Landscape: tracking de datos y experimentos</h2>
+  <div class="tools-grid">
+    <div class="tool-card"><div class="tool-header"><span class="tool-icon">📦</span><span class="tool-name">DVC</span><span class="tool-badge tb-b">datos + experimentos</span></div><p class="tool-desc">Versionado de datos sobre Git, pipelines reproducibles como DAG y tracking de experimentos. Open source, sin servidor requerido.</p><div class="tool-tags"><span class="chip">Git-native</span><span class="chip">pipelines DAG</span><span class="chip">any storage</span><span class="chip">offline</span></div></div>
+    <div class="tool-card"><div class="tool-header"><span class="tool-icon">🔬</span><span class="tool-name">MLflow</span><span class="tool-badge tb-e">experimentos</span></div><p class="tool-desc">Tracking de runs, parámetros, métricas y artefactos con UI web. Model registry integrado y soporte multi-framework.</p><div class="tool-tags"><span class="chip">UI web</span><span class="chip">model registry</span><span class="chip">auto-logging</span><span class="chip">multi-framework</span></div></div>
+    <div class="tool-card"><div class="tool-header"><span class="tool-icon">🐝</span><span class="tool-name">Weights &amp; Biases</span><span class="tool-badge tb-e">experimentos</span></div><p class="tool-desc">Plataforma cloud para tracking en tiempo real, sweeps automáticos de hiperparámetros y reportes colaborativos.</p><div class="tool-tags"><span class="chip">cloud</span><span class="chip">sweeps</span><span class="chip">real-time</span><span class="chip">colaborativo</span></div></div>
+    <div class="tool-card"><div class="tool-header"><span class="tool-icon">🐙</span><span class="tool-name">DagsHub</span><span class="tool-badge tb-b">datos + experimentos</span></div><p class="tool-desc">GitHub para ML: integra DVC, MLflow y Git. Visualiza datos, pipelines y experimentos directamente desde el navegador.</p><div class="tool-tags"><span class="chip">DVC remoto</span><span class="chip">MLflow UI</span><span class="chip">data storage</span></div></div>
   </div>
+  <table class="comp-table">
+    <thead><tr><th>Herramienta</th><th>Datos</th><th>Experimentos</th><th>Pipelines</th><th>UI web</th><th>Offline</th><th>Ideal para</th></tr></thead>
+    <tbody>
+      <tr><td><strong>DVC</strong></td><td><span class="dot g"></span></td><td><span class="dot g"></span></td><td><span class="dot g"></span></td><td><span class="dot y"></span> CLI</td><td><span class="dot g"></span></td><td>Investigación reproducible</td></tr>
+      <tr><td><strong>MLflow</strong></td><td><span class="dot y"></span></td><td><span class="dot g"></span></td><td><span class="dot y"></span></td><td><span class="dot g"></span></td><td><span class="dot g"></span></td><td>Proyectos de equipo / MLOps</td></tr>
+      <tr><td><strong>W&amp;B</strong></td><td><span class="dot y"></span></td><td><span class="dot g"></span></td><td><span class="dot r"></span></td><td><span class="dot g"></span></td><td><span class="dot r"></span></td><td>Deep learning / colaboración</td></tr>
+      <tr><td><strong>DagsHub</strong></td><td><span class="dot g"></span></td><td><span class="dot g"></span></td><td><span class="dot g"></span></td><td><span class="dot g"></span></td><td><span class="dot r"></span></td><td>Open source + visibilidad web</td></tr>
+    </tbody>
+  </table>
+</div>
 
-  <!-- ══════════════════════════════════════
-       SLIDE 1 — Motivación
-       ══════════════════════════════════════ -->
-  <div class="slide purple">
-    <div class="slide-num">02 / 13</div>
-    <span class="tag purple">Introducción</span>
-    <h2>¿Por qué necesitamos DVC en investigación?</h2>
-    <div class="grid2">
-      <div class="col">
-        <div class="box accent-coral">
-          <h3>❌ Sin DVC</h3>
-          <ul>
-            <li><code>data_v3_final2.csv</code> — versiones manuales</li>
-            <li>Notebooks con resultados sobreescritos</li>
-            <li>No sabes qué parámetros generaron cada gráfica</li>
-            <li>Imposible reproducir el paper 6 meses después</li>
-            <li>Colaboradores obtienen resultados distintos</li>
-          </ul>
-        </div>
-      </div>
-      <div class="col">
-        <div class="box accent-teal">
-          <h3>✅ Con DVC</h3>
-          <ul>
-            <li>Datos trackeados por hash, no duplicados</li>
-            <li>Cada experimento guarda métricas, modelo y plots</li>
-            <li><code>dvc repro</code> re-corre exactamente lo necesario</li>
-            <li><code>dvc exp show</code> compara todos los runs</li>
-            <li>Reproducible en cualquier máquina con <code>dvc pull</code></li>
-          </ul>
-        </div>
-        <div class="box accent-purple" style="margin-top: var(--gap)">
-          <h3>🔑 Principio clave</h3>
-          <p>DVC no reemplaza a Git — lo <strong>extiende</strong>. Git versiona código; DVC versiona datos, modelos y métricas con el mismo flujo de trabajo.</p>
-        </div>
-      </div>
+<!-- 02 Motivación -->
+<div class="slide purple">
+  <div class="slide-num">02 / 14</div>
+  <span class="tag purple">Motivación</span>
+  <h2>El problema de la reproducibilidad</h2>
+  <div class="grid2">
+    <div class="col">
+      <div class="box ac"><h3>❌ Flujo sin control</h3><ul><li><code>data_v3_final2.csv</code> — versiones manuales</li><li>Notebooks sobreescritos sin historial</li><li>"¿Con qué parámetros entrené este modelo?"</li><li>Resultados distintos entre máquinas</li><li>Imposible comparar dos experimentos de la semana pasada</li></ul></div>
+      <div class="box ag" style="margin-top:var(--gap)"><h3>💬 Escenario real</h3><p>Un revisor de tu paper pide reproducir la Tabla 3. Los datos cambiaron, no recuerdas los hiperparámetros exactos, y el modelo fue sobreescrito.</p></div>
+    </div>
+    <div class="col">
+      <div class="box at"><h3>✅ Flujo con DVC</h3><ul><li>Datos versionados por hash criptográfico</li><li>Pipeline reproducible como código</li><li>Cada experimento: params + métricas + modelo + predicciones</li><li><code>dvc exp apply tabla3</code> → workspace restaurado</li><li>Compartir con <code>dvc push/pull</code> como Git</li></ul></div>
+      <div class="box ap" style="margin-top:var(--gap)"><h3>🔑 Principio clave</h3><p>DVC <strong>extiende</strong> Git, no lo reemplaza. Git versiona código; DVC versiona datos y modelos con el mismo flujo de trabajo.</p></div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════════
-       SLIDE 2 — Conceptos clave
-       ══════════════════════════════════════ -->
-  <div class="slide teal">
-    <div class="slide-num">03 / 13</div>
-    <span class="tag teal">Conceptos clave</span>
-    <h2>¿Qué es DVC?</h2>
-    <p style="flex-shrink:0;margin-bottom:var(--gap)">DVC se integra con Git. Mientras Git versiona el <strong>código</strong>, DVC versiona los <strong>datos, modelos y métricas</strong>.</p>
-    <div class="grid3">
-      <div class="box accent-teal">
-        <h3>📄 Archivos .dvc</h3>
-        <p>Punteros ligeros que reemplazan archivos grandes en Git. El archivo real vive en caché; el <code>.dvc</code> con su hash MD5 sí va a Git.</p>
-      </div>
-      <div class="box accent-purple">
-        <h3>⚙️ dvc.yaml</h3>
-        <p>Define el DAG: etapas, dependencias, outputs, métricas y parámetros. DVC construye el grafo y sabe qué re-correr automáticamente.</p>
-      </div>
-      <div class="box accent-amber">
-        <h3>🎛️ params.yaml</h3>
-        <p>Todos los hiperparámetros en un solo lugar. Si un valor cambia, la etapa que lo consume se invalida automáticamente.</p>
-      </div>
+<!-- 03 Conceptos -->
+<div class="slide teal">
+  <div class="slide-num">03 / 14</div>
+  <span class="tag teal">Conceptos clave</span>
+  <h2>Los tres pilares de DVC</h2>
+  <div class="grid3">
+    <div class="box at"><h3>📄 Archivos .dvc</h3><p>Puntero ligero que reemplaza el archivo grande en Git. Contiene el hash MD5 del contenido real.</p><pre class="cmd" style="margin-top:6px">outs:
+- md5: a1b2c3...
+  path: data/raw/data.csv</pre></div>
+    <div class="box ap"><h3>⚙️ dvc.yaml</h3><p>Define el DAG del pipeline: etapas, dependencias, outputs, métricas y parámetros. DVC construye el grafo y sabe qué re-correr.</p></div>
+    <div class="box aa"><h3>🎛️ params.yaml</h3><p>Todos los hiperparámetros centralizados. Si un valor cambia, DVC invalida solo las etapas que dependen de él.</p></div>
+  </div>
+  <div class="box ag" style="margin-top:var(--gap); flex-shrink:0"><h3>El flujo básico</h3><p><code>git init</code> + <code>dvc init</code> → <code>dvc add data/</code> → scripts + <code>dvc.yaml</code> + <code>params.yaml</code> → <code>dvc repro</code> → <code>dvc exp run</code> → <code>dvc exp show</code></p></div>
+</div>
+
+<!-- 04 Versionar datos -->
+<div class="slide amber">
+  <div class="slide-num">04 / 14</div>
+  <span class="tag amber">Gestión de datos</span>
+  <h2>Versionar datos con <code>dvc add</code></h2>
+  <div class="grid2">
+    <div class="col">
+      <p style="flex-shrink:0">Git guarda el <code>.dvc</code> (hash). Los datos reales van al remote storage.</p>
+<pre class="cmd"><span class="kw">dvc</span> add data/raw/dataset.csv
+<span class="kw">git</span> add data/raw/dataset.csv<span class="arg">.dvc</span> .gitignore
+<span class="kw">git</span> commit -m <span class="str">"data: add raw dataset v1"</span>
+
+<span class="kw">dvc</span> remote add -d storage gdrive://&lt;id&gt;
+<span class="kw">dvc</span> push   <span class="cmt"># sube datos al remoto</span>
+
+<span class="cmt"># Colaborador clona y descarga</span>
+<span class="kw">git</span> clone &lt;repo&gt; && <span class="kw">dvc</span> pull</pre>
+      <div class="box aa" style="margin-top:var(--gap)"><h3>Actualizar datos</h3><p>Reemplaza el archivo → <code>dvc add</code> → nuevo hash → <code>git commit</code>. DVC conserva ambas versiones en caché (deduplicación automática).</p></div>
+    </div>
+    <div class="col">
+      <div class="box at"><h3>¿Por qué no en Git?</h3><ul><li>Git no escala con archivos &gt;50 MB</li><li>DVC usa deduplicación por hash: mismo dato = cero espacio extra</li><li>El <code>.dvc</code> es ligero y viaja en Git normalmente</li></ul></div>
+      <div class="box ap" style="margin-top:var(--gap)"><h3>Remotos soportados</h3><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"><span class="chip">Google Drive</span><span class="chip">S3</span><span class="chip">GCS</span><span class="chip">Azure Blob</span><span class="chip">SSH</span><span class="chip">local</span></div></div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════════
-       SLIDE 3 — dvc add
-       ══════════════════════════════════════ -->
-  <div class="slide amber">
-    <div class="slide-num">04 / 13</div>
-    <span class="tag amber">Gestión de datos</span>
-    <h2>Versionar datos con <code>dvc add</code></h2>
-    <div class="grid2">
-      <div class="col">
-        <p style="flex-shrink:0">Los datos van a un <strong>remote storage</strong>. Git solo guarda el <code>.dvc</code> con el hash.</p>
-<pre class="cmd"><span class="kw">dvc</span> add data/raw/turismo.csv
-<span class="kw">git</span> add data/raw/turismo.csv<span class="arg">.dvc</span> .gitignore
-<span class="kw">git</span> commit -m <span class="str">"data: add raw v1"</span></pre>
-<pre class="cmd"><span class="kw">dvc</span> remote add -d myremote gdrive://&lt;id&gt;
-<span class="kw">dvc</span> push  <span class="cmt"># sube datos al remoto</span>
-<span class="kw">dvc</span> pull  <span class="cmt"># colaborador descarga</span></pre>
-      </div>
-      <div class="col">
-        <div class="box accent-amber">
-          <h3>¿Por qué no en Git?</h3>
-          <p>Git no escala con archivos &gt;50 MB. DVC guarda el hash en Git y el binario en el remoto. Mismo hash = cero espacio extra.</p>
-        </div>
-        <div class="box accent-teal" style="margin-top:var(--gap)">
-          <h3>Remotos soportados</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
-            <span class="chip">Google Drive</span><span class="chip">S3</span><span class="chip">GCS</span>
-            <span class="chip">Azure Blob</span><span class="chip">SSH</span><span class="chip">local</span>
-          </div>
-        </div>
-      </div>
-    </div>
+<!-- 05 Pipeline -->
+<div class="slide purple">
+  <div class="slide-num">05 / 14</div>
+  <span class="tag purple">Pipeline</span>
+  <h2>Definir un pipeline reproducible en <code>dvc.yaml</code></h2>
+  <div class="pipeline">
+    <div class="pstep">data/raw/</div><span class="parr">→</span>
+    <div class="pstep">clean</div><span class="parr">→</span>
+    <div class="pstep">features</div><span class="parr">→</span>
+    <div class="pstep">train</div><span class="parr">→</span>
+    <div class="pstep">evaluate</div>
   </div>
-
-  <!-- ══════════════════════════════════════
-       SLIDE 4 — dvc.yaml
-       ══════════════════════════════════════ -->
-  <div class="slide purple">
-    <div class="slide-num">05 / 13</div>
-    <span class="tag purple">Pipeline</span>
-    <h2>Definir un pipeline en <code>dvc.yaml</code></h2>
-    <div class="pipeline">
-      <div class="pstep">data/raw/</div><span class="parr">→</span>
-      <div class="pstep">clean</div><span class="parr">→</span>
-      <div class="pstep">features</div><span class="parr">→</span>
-      <div class="pstep">train</div><span class="parr">→</span>
-      <div class="pstep">evaluate</div><span class="parr">→</span>
-      <div class="pstep">interpret</div>
-    </div>
-    <div class="grid2" style="margin-top:var(--gap)">
-      <pre class="cmd" style="margin:0">stages:
+  <div class="grid2" style="margin-top:var(--gap)">
+<pre class="cmd" style="margin:0">stages:
   train:
     <span class="kw">cmd</span>: python src/train.py
-    <span class="arg">deps</span>: [src/train.py,
-           data/features/features.csv,
-           params.yaml]
+    <span class="arg">deps</span>:
+      - src/train.py
+      - data/features/X_train.csv
+      - params.yaml
     <span class="str">params</span>: [model, train]
     outs:
-      - models/model.json:
+      - models/model.pkl:
+          cache: false
+      - data/predictions/test_preds.csv:
           cache: false
     metrics:
       - metrics/metrics.json:
+          cache: false
+    plots:
+      - plots/confusion_matrix.png:
           cache: false</pre>
-      <div class="col">
-        <div class="box accent-purple">
-          <h3>¿Qué monitorea DVC?</h3>
-          <ul>
-            <li><strong>deps</strong>: hash de archivos de entrada</li>
-            <li><strong>params</strong>: valores en params.yaml</li>
-            <li><strong>cmd</strong>: el comando mismo</li>
-          </ul>
-          <p style="margin-top:5px">Si alguno cambia → etapa y descendientes se re-corren.</p>
-        </div>
-        <div class="box accent-teal" style="margin-top:var(--gap)">
-          <h3>💡 <code>cache: false</code></h3>
-          <p>El archivo se guarda en Git (legible en historial), no solo en caché DVC. Ideal para métricas, plots y CSVs pequeños.</p>
-        </div>
-      </div>
+    <div class="col">
+      <div class="box ap"><h3>¿Qué monitorea DVC por etapa?</h3><ul><li><strong>deps</strong>: hash de scripts y datos de entrada</li><li><strong>params</strong>: valores leídos de <code>params.yaml</code></li><li><strong>cmd</strong>: el comando mismo</li></ul><p style="margin-top:5px">Cualquier cambio → etapa + descendientes se re-corren.</p></div>
+      <div class="box at" style="margin-top:var(--gap)"><h3>💡 <code>cache: false</code></h3><p>El output sí va a Git. Úsalo para modelo, predicciones, métricas y plots — los artefactos que quieres comparar entre experimentos sin volver a correr nada.</p></div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════════
-       SLIDE 5 — Etapas del pipeline
-       ══════════════════════════════════════ -->
-  <div class="slide teal">
-    <div class="slide-num">06 / 13</div>
-    <span class="tag teal">Pipeline</span>
-    <h2>Las etapas del pipeline de investigación</h2>
-    <div class="grid2">
-      <div class="col">
-        <div class="box accent-teal">
-          <h3>1 · Limpieza (<code>clean.py</code>)</h3>
-          <p>Lee raw CSV, imputa nulos, normaliza fechas. Output con <code>cache: false</code> para verlo en Git.</p>
-        </div>
-        <div class="box accent-purple">
-          <h3>2 · Features (<code>features.py</code>)</h3>
-          <p>Rezagos, medias móviles, dummies de trimestre. Parámetros como <code>lags</code> vienen de <code>params.yaml</code>.</p>
-        </div>
-        <div class="box accent-blue">
-          <h3>3 · Entrenamiento (<code>train.py</code>)</h3>
-          <p>Split cronológico, ajusta modelo, guarda <code>model.json</code> y metadatos del split.</p>
-        </div>
-      </div>
-      <div class="col">
-        <div class="box accent-amber">
-          <h3>4 · Evaluación (<code>evaluate.py</code>)</h3>
-          <p>MAE, RMSE, MAPE, R² → <code>metrics.json</code>. Plot del pronóstico → <code>plots/</code>.</p>
-        </div>
-        <div class="box accent-coral">
-          <h3>5 · Interpretación (<code>interpret.py</code>)</h3>
-          <p>SHAP bar chart + descomposición STL de tendencia y estacionalidad.</p>
-        </div>
-        <div class="box accent-gray">
-          <h3>📂 Estructura de outputs</h3>
-          <p><code>models/</code> · <code>metrics/</code> · <code>plots/</code> · <code>data/processed/</code> · <code>data/features/</code></p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       SLIDE 6 — params.yaml
-       ══════════════════════════════════════ -->
-  <div class="slide blue">
-    <div class="slide-num">07 / 13</div>
-    <span class="tag blue">params.yaml</span>
-    <h2>Centralizar hiperparámetros en <code>params.yaml</code></h2>
-    <div class="grid2">
-      <pre class="cmd" style="margin:0;flex:1"><span class="cmt"># params.yaml</span>
-<span class="arg">target</span>: consumo_turistico
+<!-- 06 params.yaml -->
+<div class="slide blue">
+  <div class="slide-num">06 / 14</div>
+  <span class="tag blue">Configuración</span>
+  <h2>Centralizar hiperparámetros en <code>params.yaml</code></h2>
+  <div class="grid2">
+<pre class="cmd" style="margin:0;flex:1"><span class="cmt"># params.yaml</span>
+<span class="arg">data</span>:
+  test_size: 0.2
+  random_state: 42
+  stratify: true
 
 <span class="arg">features</span>:
-  lags: [1, 2, 3, 4]
-  rolling_windows: [2, 4]
-  add_quarter_dummies: true
+  scaling: standard   <span class="cmt"># standard | minmax</span>
+  pca_components: null
 
 <span class="arg">model</span>:
-  type: xgboost
-  xgboost:
+  type: random_forest <span class="cmt"># swappable</span>
+  random_forest:
     n_estimators: 100
-    max_depth: 3
-    learning_rate: 0.1
-    subsample: 0.8
+    max_depth: 5
+  logistic:
+    C: 1.0
+    max_iter: 200
 
-<span class="arg">train</span>:
-  test_size: 0.2</pre>
-      <div class="col">
-        <div class="box accent-blue">
-          <h3>¿Por qué importa?</h3>
-          <p>Un cambio invalida exactamente las etapas afectadas. Nada más, nada menos.</p>
-        </div>
-        <div class="box" style="background:#1e1e2e;border-color:#1e1e2e">
-          <h3 style="color:#a6e3a1">Leer desde Python</h3>
-<pre class="cmd" style="background:transparent;padding:0;margin:4px 0 0">import yaml
+<span class="arg">evaluate</span>:
+  threshold: 0.5</pre>
+    <div class="col">
+      <div class="box ab"><h3>Leer en Python</h3><pre class="cmd" style="background:#f0eee8;color:#1a1a1a;padding:7px 9px">import yaml
 with open("params.yaml") as f:
     p = yaml.safe_load(f)
-lags = p["features"]["lags"]</pre>
-        </div>
-        <div class="box accent-purple">
-          <h3>Cambiar desde CLI</h3>
-<pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">dvc</span> exp run \
-  --set-param <span class="arg">model.xgboost.max_depth=6</span>
-<span class="cmt"># no toca params.yaml directamente</span></pre>
-        </div>
-      </div>
+n_est = p["model"]["random_forest"]["n_estimators"]</pre></div>
+      <div class="box ap" style="margin-top:var(--gap)"><h3>Por qué un solo archivo</h3><ul><li>DVC lo monitorea automáticamente</li><li>Fuente de verdad para todos los scripts</li><li>Cambiar sin editar: <code>--set-param</code></li><li>El historial de Git muestra exactamente qué cambió</li></ul></div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════════
-       SLIDE 7 — dvc repro
-       ══════════════════════════════════════ -->
-  <div class="slide blue">
-    <div class="slide-num">08 / 13</div>
-    <span class="tag blue">Reproducibilidad</span>
-    <h2>Correr y reproducir el pipeline</h2>
-    <div class="grid2">
-      <pre class="cmd" style="margin:0"><span class="kw">dvc</span> repro
-<span class="cmt"># solo corre etapas cambiadas</span>
+<!-- 07 dvc repro -->
+<div class="slide blue">
+  <div class="slide-num">07 / 14</div>
+  <span class="tag blue">Reproducibilidad</span>
+  <h2><code>dvc repro</code> — ejecución inteligente del pipeline</h2>
+  <div class="grid2">
+<pre class="cmd" style="margin:0"><span class="kw">dvc</span> repro
+<span class="cmt"># corre solo etapas desactualizadas</span>
 
 <span class="kw">dvc</span> repro --force
 <span class="cmt"># fuerza re-ejecución de todo</span>
 
-<span class="kw">dvc</span> repro train
-<span class="cmt"># etapa específica + descendientes</span>
+<span class="kw">dvc</span> repro evaluate
+<span class="cmt"># etapa específica + sus dependencias</span>
 
 <span class="kw">dvc</span> dag
-<span class="cmt"># visualiza el grafo ASCII</span>
+<span class="cmt"># grafo ASCII del pipeline</span>
 
 <span class="kw">dvc</span> status
 <span class="cmt"># qué etapas están desactualizadas</span>
 
 <span class="kw">dvc</span> metrics show
-<span class="cmt"># métricas del run actual</span></pre>
-      <div class="col">
-        <div class="box accent-blue">
-          <h3>🔑 Cómo decide DVC qué re-correr</h3>
-          <p>Hashea <strong>deps + params + código</strong>. Hash sin cambios → Stage cached. Hash cambiado → etapa y descendientes re-corren.</p>
-          <p style="margin-top:5px"><code>dvc repro</code> es <strong>idempotente</strong>: seguro de correr siempre.</p>
-        </div>
-        <div class="box accent-teal" style="margin-top:var(--gap)">
-          <h3>🔄 Flujo con Git</h3>
-          <ul>
-            <li>Cambia código o params</li>
-            <li><code>dvc repro</code> → solo re-corre lo necesario</li>
-            <li><code>git add dvc.lock metrics/ plots/</code></li>
-            <li><code>git commit</code> → snapshot completo</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
+<span class="cmt"># métricas del workspace actual</span>
 
-  <!-- ══════════════════════════════════════
-       SLIDE 8 — dvc exp run
-       ══════════════════════════════════════ -->
-  <div class="slide coral">
-    <div class="slide-num">09 / 13</div>
-    <span class="tag coral">Experimentos</span>
-    <h2>Experimentación con <code>dvc exp run</code></h2>
-    <div class="grid2">
-      <div class="col">
-        <p style="flex-shrink:0">Cada run crea un <strong>experimento nombrado</strong> que guarda params, métricas, modelo y plots — sin branches manuales.</p>
-<pre class="cmd"><span class="kw">dvc</span> exp run --name <span class="arg">baseline</span>
-
-<span class="kw">dvc</span> exp run \
-  --set-param <span class="str">model.xgboost.max_depth=6</span> \
-  --name <span class="arg">depth6</span>
-
-<span class="kw">dvc</span> exp run \
-  --set-param <span class="str">"features.lags=[1,2,4,8]"</span> \
-  --name <span class="arg">lags_ext</span>
-
-<span class="kw">dvc</span> exp run \
-  --set-param <span class="str">model.xgboost.n_estimators=300</span> \
-  --set-param <span class="str">model.xgboost.max_depth=5</span> \
-  --name <span class="arg">n300_depth5</span></pre>
-      </div>
-      <div class="col">
-        <div class="box accent-coral">
-          <h3>¿Qué se guarda en cada experimento?</h3>
-          <ul>
-            <li>Snapshot de <code>params.yaml</code></li>
-            <li>JSON de métricas (MAE, RMSE, R²…)</li>
-            <li>Modelo entrenado</li>
-            <li>Plots generados</li>
-            <li>Hash del código y los datos</li>
-            <li>Timestamp del run</li>
-          </ul>
-        </div>
-        <div class="box accent-purple" style="margin-top:var(--gap)">
-          <h3>💡 Sin branches de Git</h3>
-          <p>DVC guarda los experimentos en refs especiales de Git. No contamina tu historial de branches.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       SLIDE 9 — dvc exp show
-       ══════════════════════════════════════ -->
-  <div class="slide purple">
-    <div class="slide-num">10 / 13</div>
-    <span class="tag purple">Comparación</span>
-    <h2>Comparar experimentos con <code>dvc exp show</code></h2>
-    <div class="grid2">
-      <div class="col">
-<pre class="cmd"><span class="kw">dvc</span> exp show
-<span class="cmt"># tabla completa en terminal</span>
-
-<span class="kw">dvc</span> exp show --only-changed
-<span class="cmt"># solo params que cambiaron</span>
-
-<span class="kw">dvc</span> exp show --csv &gt; exps.csv
-<span class="cmt"># exportar para análisis Python</span>
-
-<span class="kw">dvc</span> exp apply <span class="arg">depth6</span>
-<span class="cmt"># promover el mejor al workspace</span>
-
-<span class="kw">git</span> add . && git commit \
-  -m <span class="str">"feat: adopt depth6"</span></pre>
-      </div>
-      <div class="col">
-        <table class="exp">
-          <thead>
-            <tr><th>Experimento</th><th>depth</th><th>MAE</th><th>MAPE</th><th>R²</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>baseline</td><td>3</td><td>5.02</td><td>6.96%</td><td>0.271</td></tr>
-            <tr><td>depth6</td><td>6</td><td>4.71</td><td>6.43%</td><td>0.318 <span class="badge g">↑</span></td></tr>
-            <tr><td>lags_ext</td><td>3</td><td>5.18</td><td>7.12%</td><td>0.254 <span class="badge r">↓</span></td></tr>
-            <tr><td>n300_depth5</td><td>5</td><td>4.89</td><td>6.71%</td><td>0.295</td></tr>
-          </tbody>
-        </table>
-        <div class="box accent-purple" style="margin-top:var(--gap)">
-          <h3>Volver a cualquier experimento</h3>
-          <p><code>dvc exp apply &lt;nombre&gt;</code> restaura el workspace completo: params, modelo, métricas y plots.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       SLIDE 10 — Análisis cross-experiment
-       ══════════════════════════════════════ -->
-  <div class="slide teal">
-    <div class="slide-num">11 / 13</div>
-    <span class="tag teal">Análisis</span>
-    <h2>Generar figuras de todos los experimentos</h2>
-    <div class="grid2">
-      <div class="col">
-<pre class="cmd"><span class="kw">dvc</span> exp show --csv &gt; experiments.csv
-<span class="kw">dvc</span> exp show --json &gt; experiments.json</pre>
-<pre class="cmd" style="background:#f8f7f4;color:#1a1a1a">import pandas as pd
-import matplotlib.pyplot as plt
-
-df = pd.read_csv("experiments.csv")
-
-<span class="cmt"># Barras MAE por experimento</span>
-df.plot.bar(x="Experiment", y="mae")
-
-<span class="cmt"># Scatter max_depth vs R²</span>
-plt.scatter(df["max_depth"], df["r2"])
-
-<span class="cmt"># Exportar tabla para el paper</span>
-df.to_latex("results_table.tex")</pre>
-      </div>
-      <div class="col">
-        <div class="box accent-teal">
-          <h3>Posibles análisis</h3>
-          <ul>
-            <li>Barras de MAE/R² por experimento</li>
-            <li>Scatter parámetro vs métrica</li>
-            <li>Heatmap de hiperparámetros</li>
-            <li>Comparativa de plots de pronóstico</li>
-            <li>Trade-off MAE vs complejidad</li>
-            <li>Tabla LaTeX para el paper</li>
-          </ul>
-        </div>
-        <div class="box accent-purple" style="margin-top:var(--gap)">
-          <h3>💡 Por eso guardamos todo</h3>
-          <p>Cada experimento tiene su snapshot completo. Puedes comparar runs de hace semanas con los de hoy sin re-ejecutar nada.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       SLIDE 11 — Model Registry
-       ══════════════════════════════════════ -->
-  <div class="slide amber">
-    <div class="slide-num">12 / 13</div>
-    <span class="tag amber">Model Registry</span>
-    <h2>Agregar modelos sin tocar el pipeline</h2>
-    <div class="grid2">
-      <div class="col">
-        <div class="box accent-amber">
-          <h3>Interfaz BaseForecaster</h3>
-          <p>Métodos: <code>fit</code>, <code>predict</code>, <code>save</code>, <code>load</code>, <code>get_shap_explainer</code>.</p>
-        </div>
-        <div class="box accent-purple" style="margin-top:var(--gap)">
-          <h3>Agregar un modelo nuevo</h3>
-          <ol>
-            <li>Crear <code>src/models/mi_modelo.py</code></li>
-            <li>Implementar <code>BaseForecaster</code></li>
-            <li>Registrar en <code>__init__.py</code></li>
-            <li>Agregar params en <code>params.yaml</code></li>
-            <li>Cambiar <code>model.type</code> y correr</li>
-          </ol>
-        </div>
-      </div>
-      <div class="col">
-<pre class="cmd"><span class="cmt"># params.yaml</span>
-<span class="arg">model</span>:
-  type: xgboost  <span class="cmt"># ← solo cambia esto</span>
-  xgboost:
-    max_depth: 3
-    n_estimators: 100
-  random_forest:
-    n_estimators: 200
-    max_features: sqrt
-  <span class="cmt"># lstm:</span>
-  <span class="cmt">#   hidden_size: 64</span>
-  <span class="cmt">#   epochs: 100</span></pre>
-        <div class="box accent-teal" style="margin-top:var(--gap)">
-          <h3>Comparar modelos</h3>
-<pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">dvc</span> exp run \
-  --set-param <span class="str">model.type=random_forest</span> \
-  --name <span class="arg">rf_model</span>
-<span class="kw">dvc</span> exp show --only-changed</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       SLIDE 12 — Resumen
-       ══════════════════════════════════════ -->
-  <div class="slide purple">
-    <div class="slide-num">13 / 13</div>
-    <span class="tag purple">Resumen</span>
-    <h2>Flujo de trabajo completo</h2>
-    <div class="grid2">
-      <div class="col">
-        <div class="box accent-purple">
-          <h3>Setup (una vez)</h3>
-<pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">git</span> init && <span class="kw">dvc</span> init
-<span class="kw">dvc</span> add data/raw/*.csv
-<span class="kw">dvc</span> remote add -d remote &lt;url&gt;
-<span class="kw">git</span> add . && git commit -m <span class="str">"init"</span></pre>
-        </div>
-        <div class="box accent-teal" style="margin-top:var(--gap)">
-          <h3>Reproducir</h3>
-<pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">dvc</span> repro
-<span class="kw">dvc</span> metrics show && <span class="kw">dvc</span> dag</pre>
-        </div>
-      </div>
-      <div class="col">
-        <div class="box accent-coral">
-          <h3>Experimentar</h3>
-<pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">dvc</span> exp run \
-  --set-param <span class="str">model.xgboost.max_depth=6</span> \
-  --name <span class="arg">depth6</span>
-<span class="kw">dvc</span> exp show --csv &gt; results.csv</pre>
-        </div>
-        <div class="box accent-amber" style="margin-top:var(--gap)">
-          <h3>Adoptar y committear</h3>
-<pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">dvc</span> exp apply <span class="arg">depth6</span>
-<span class="kw">git</span> add . && git commit \
-  -m <span class="str">"feat: adopt depth6"</span></pre>
-        </div>
-      </div>
-    </div>
-    <hr>
-    <p style="font-size:var(--t-sm);color:var(--muted);text-align:center">
-      <code>git checkout &lt;hash&gt;</code> + <code>dvc checkout</code> → reproducir cualquier resultado anterior, incluyendo datos y modelo.
-    </p>
-  </div>
-
-  <!-- ─── Controls ─── -->
-  <div id="controls">
-    <span id="hint">← → Space para navegar</span>
-    <span id="slide-counter">1 / 13</span>
-    <div class="nav-btns">
-      <button class="nav-btn" id="btn-prev" onclick="go(-1)" disabled>&#8592;</button>
-      <button class="nav-btn" id="btn-next" onclick="go(1)">&#8594;</button>
+<span class="kw">dvc</span> metrics diff HEAD~1
+<span class="cmt"># comparar con commit anterior</span></pre>
+    <div class="col">
+      <div class="box ab"><h3>🔑 Lógica de invalidación</h3><p>DVC hashea <strong>deps + params + código</strong> de cada etapa y guarda el resultado en <code>dvc.lock</code>.</p><ul style="margin-top:5px"><li>Hash igual → <em>Stage cached</em>, se salta</li><li>Hash distinto → re-ejecuta + propaga a descendientes</li></ul><p style="margin-top:5px"><code>dvc repro</code> es <strong>idempotente</strong>: siempre seguro de correr.</p></div>
+      <div class="box at" style="margin-top:var(--gap)"><h3>Flujo típico en investigación</h3><ol><li>Edita un script o un param</li><li><code>dvc repro</code> → solo re-corre lo necesario</li><li><code>git add dvc.lock metrics/ plots/</code></li><li><code>git commit</code> → snapshot reproducible</li></ol></div>
     </div>
   </div>
 </div>
 
+<!-- 08 dvc exp run -->
+<div class="slide coral">
+  <div class="slide-num">08 / 14</div>
+  <span class="tag coral">Experimentos</span>
+  <h2><code>dvc exp run</code> — experimentos nombrados</h2>
+  <div class="grid2">
+    <div class="col">
+      <p style="flex-shrink:0">Cada run crea un <strong>snapshot completo</strong>: params, métricas, modelo, predicciones y plots. Sin branches manuales de Git.</p>
+<pre class="cmd"><span class="cmt"># Baseline</span>
+<span class="kw">dvc</span> exp run --name <span class="arg">baseline</span>
+
+<span class="cmt"># Cambiar hiperparámetro</span>
+<span class="kw">dvc</span> exp run \
+  --set-param <span class="str">model.random_forest.max_depth=10</span> \
+  --name <span class="arg">depth10</span>
+
+<span class="cmt"># Cambiar tipo de modelo</span>
+<span class="kw">dvc</span> exp run \
+  --set-param <span class="str">model.type=logistic</span> \
+  --name <span class="arg">logistic_c1</span>
+
+<span class="cmt"># Varios params a la vez</span>
+<span class="kw">dvc</span> exp run \
+  --set-param <span class="str">model.random_forest.n_estimators=300</span> \
+  --set-param <span class="str">features.scaling=minmax</span> \
+  --name <span class="arg">rf300_minmax</span></pre>
+    </div>
+    <div class="col">
+      <div class="box ac"><h3>¿Qué se guarda por experimento?</h3><ul><li>Snapshot de <code>params.yaml</code></li><li><code>metrics/metrics.json</code></li><li><code>models/model.pkl</code></li><li><code>data/predictions/test_preds.csv</code></li><li>Todos los plots generados</li><li>Hash del código y los datos usados</li></ul></div>
+      <div class="box ap" style="margin-top:var(--gap)"><h3>Sin contaminar Git</h3><p>DVC guarda los experimentos en refs especiales (<code>refs/exps/</code>). Tu historial de branches permanece limpio.</p></div>
+      <div class="box at" style="margin-top:var(--gap)"><h3>Restaurar cualquier experimento</h3><p><code>dvc exp apply &lt;nombre&gt;</code> restaura el workspace completo: params, modelo, predicciones y plots.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 09 dvc exp show -->
+<div class="slide purple">
+  <div class="slide-num">09 / 14</div>
+  <span class="tag purple">Comparación</span>
+  <h2>Comparar todos los experimentos</h2>
+  <div class="grid2">
+    <div class="col">
+<pre class="cmd"><span class="kw">dvc</span> exp show --only-changed
+<span class="cmt"># tabla: solo params que cambiaron</span>
+
+<span class="kw">dvc</span> exp show --csv &gt; experiments.csv
+<span class="kw">dvc</span> exp show --json &gt; experiments.json
+
+<span class="kw">dvc</span> metrics diff baseline depth10
+<span class="cmt"># diff de métricas entre dos runs</span>
+
+<span class="kw">dvc</span> exp apply <span class="arg">depth10</span>
+<span class="cmt"># restaura workspace al mejor run</span>
+
+<span class="kw">dvc</span> exp push origin <span class="arg">depth10</span>
+<span class="cmt"># compartir con el equipo</span>
+<span class="kw">dvc</span> exp pull <span class="arg">depth10</span></pre>
+    </div>
+    <div class="col">
+      <table class="exp">
+        <thead><tr><th>Experimento</th><th>tipo</th><th>depth</th><th>acc</th><th>f1</th></tr></thead>
+        <tbody>
+          <tr><td>baseline</td><td>RF</td><td>5</td><td>0.913</td><td>0.911</td></tr>
+          <tr><td>depth10</td><td>RF</td><td>10</td><td>0.947</td><td>0.946 <span class="badge g">↑</span></td></tr>
+          <tr><td>logistic_c1</td><td>LR</td><td>—</td><td>0.878</td><td>0.875 <span class="badge r">↓</span></td></tr>
+          <tr><td>rf300_minmax</td><td>RF</td><td>5</td><td>0.931</td><td>0.929</td></tr>
+        </tbody>
+      </table>
+      <div class="box ap" style="margin-top:var(--gap)"><h3>Análisis en Python</h3><pre class="cmd" style="background:#f0eee8;color:#1a1a1a;font-size:var(--t-xs);padding:7px 9px">df = pd.read_csv("experiments.csv")
+df.plot.bar(x="Experiment", y="f1")
+plt.scatter(df["max_depth"], df["accuracy"])</pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- 10 Archivar artefactos -->
+<div class="slide indigo">
+  <div class="slide-num">10 / 14</div>
+  <span class="tag indigo">Artefactos</span>
+  <h2>Archivar artefactos localmente</h2>
+  <div class="grid2">
+    <div class="col">
+      <div class="box ai"><h3>El problema con nombres fijos</h3><p>Cada <code>dvc exp run</code> sobreescribe <code>model.pkl</code>, <code>test_preds.csv</code> y <code>metrics.json</code> en el workspace. DVC los preserva internamente, pero acceder a ellos side-by-side requiere <code>dvc exp apply</code> por cada uno.</p></div>
+      <div class="box at" style="margin-top:var(--gap)"><h3>Solución: <code>archive_experiment.py</code></h3><p>Script que copia todos los artefactos del workspace a una carpeta nombrada.</p>
+<pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">python</span> archive_experiment.py \
+  --name <span class="arg">depth10</span>
+<span class="cmt"># Crea experiments/depth10/ con:</span>
+<span class="cmt"># model.pkl, test_preds.csv,</span>
+<span class="cmt"># metrics.json, plots/,</span>
+<span class="cmt"># params_snapshot.yaml, metadata.json</span></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="arch-tree">
+        <span class="dir">experiments/</span>  <span class="dim">← en .gitignore</span><br>
+        &nbsp;&nbsp;<span class="dir">├── baseline/</span><br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;<span class="file">├── model.pkl</span><br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;<span class="file">├── test_preds.csv</span><br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;<span class="file">├── metrics.json</span><br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;<span class="dir">├── plots/</span><br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;<span class="file">├── params_snapshot.yaml</span><br>
+        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;<span class="file">└── metadata.json</span><br>
+        &nbsp;&nbsp;<span class="dir">└── depth10/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dim">... misma estructura</span>
+      </div>
+      <div class="box aa" style="margin-top:var(--gap)"><h3>¿Commit de <code>experiments/</code>?</h3><p><strong>No es necesario.</strong> La fuente de verdad es DVC (<code>dvc exp apply</code> restaura todo). Esta carpeta es caché local para comparación rápida. Para compartir con el equipo: <code>dvc exp push</code>.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 11 Flujo completo -->
+<div class="slide teal">
+  <div class="slide-num">11 / 14</div>
+  <span class="tag teal">Flujo completo</span>
+  <h2>El flujo de trabajo en investigación</h2>
+  <div class="grid2">
+    <div class="col">
+      <div class="box at"><h3>1 · Setup (una vez)</h3><pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">git</span> init && <span class="kw">dvc</span> init
+<span class="kw">dvc</span> add data/raw/
+<span class="kw">dvc</span> remote add -d storage &lt;url&gt;
+<span class="kw">git</span> add . && git commit -m <span class="str">"init"</span></pre></div>
+      <div class="box ap" style="margin-top:var(--gap)"><h3>2 · Desarrollar el pipeline</h3><p>Scripts + <code>dvc.yaml</code> + <code>params.yaml</code> → <code>dvc repro</code> → <code>git commit</code></p></div>
+      <div class="box ab" style="margin-top:var(--gap)"><h3>3 · Experimentar</h3><pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">dvc</span> exp run \
+  --set-param <span class="str">model.rf.max_depth=10</span> \
+  --name <span class="arg">depth10</span>
+<span class="kw">python</span> archive_experiment.py \
+  --name <span class="arg">depth10</span></pre></div>
+    </div>
+    <div class="col">
+      <div class="box aa"><h3>4 · Comparar</h3><pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">dvc</span> exp show --csv &gt; results.csv
+<span class="cmt"># Analizar en Python / Jupyter</span></pre></div>
+      <div class="box ac" style="margin-top:var(--gap)"><h3>5 · Adoptar el mejor</h3><pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">dvc</span> exp apply <span class="arg">depth10</span>
+<span class="kw">git</span> add params.yaml dvc.lock metrics/ plots/
+<span class="kw">git</span> commit -m <span class="str">"exp: adopt depth10"</span>
+<span class="kw">dvc</span> push</pre></div>
+      <div class="box ag" style="margin-top:var(--gap)"><h3>6 · Reproducir cualquier resultado</h3><pre class="cmd" style="font-size:var(--t-xs)"><span class="kw">git</span> checkout &lt;hash&gt;
+<span class="kw">dvc</span> checkout  <span class="cmt"># o dvc exp apply &lt;nombre&gt;</span></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- 12 Buenas prácticas -->
+<div class="slide amber">
+  <div class="slide-num">12 / 14</div>
+  <span class="tag amber">Buenas prácticas</span>
+  <h2>Diseño del pipeline para investigación</h2>
+  <div class="grid2">
+    <div class="col">
+      <div class="box aa"><h3>Model Registry pattern</h3><p>Permite cambiar el algoritmo con un solo parámetro:</p><pre class="cmd" style="background:#f0eee8;color:#1a1a1a;font-size:var(--t-xs)">REGISTRY = {
+  "random_forest": RFModel,
+  "logistic": LogisticModel,
+  "svm": SVMModel,
+}
+model = REGISTRY[p["model"]["type"]](p)</pre></div>
+      <div class="box ap" style="margin-top:var(--gap)"><h3>Separación de responsabilidades</h3><ul><li><code>clean.py</code> — solo limpieza</li><li><code>features.py</code> — solo feature engineering</li><li><code>train.py</code> — solo entrenamiento</li><li><code>evaluate.py</code> — solo métricas y plots</li></ul><p style="margin-top:5px">Cada script: lee disco → procesa → escribe disco.</p></div>
+    </div>
+    <div class="col">
+      <div class="box at"><h3>Qué guardar siempre</h3><ul><li><strong>modelo</strong> — para inference o comparación</li><li><strong>predicciones en test</strong> — para análisis post-hoc</li><li><strong>métricas JSON</strong> — para <code>dvc exp show</code></li><li><strong>plots</strong> — para paper y presentaciones</li><li><strong>params snapshot</strong> — auditoría completa</li></ul></div>
+      <div class="box ac" style="margin-top:var(--gap)"><h3>Para modelos pesados (DL)</h3><p>No archivar el modelo localmente. Usar <code>dvc push</code> después de cada run satisfactorio. El equipo lo descarga con <code>dvc exp pull</code>.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 13 Colaboración -->
+<div class="slide indigo">
+  <div class="slide-num">13 / 14</div>
+  <span class="tag indigo">Colaboración</span>
+  <h2>Trabajo en equipo con DVC</h2>
+  <div class="grid2">
+    <div class="col">
+      <div class="box ai"><h3>Compartir datos y modelos</h3><pre class="cmd"><span class="kw">dvc</span> push   <span class="cmt"># subir al remoto compartido</span>
+
+<span class="cmt"># Colaborador clona y descarga</span>
+<span class="kw">git</span> clone &lt;repo&gt;
+<span class="kw">dvc</span> pull</pre></div>
+      <div class="box at" style="margin-top:var(--gap)"><h3>Compartir experimentos</h3><pre class="cmd"><span class="kw">dvc</span> exp push origin <span class="arg">depth10</span>
+
+<span class="kw">dvc</span> exp pull <span class="arg">depth10</span>
+<span class="kw">dvc</span> exp apply <span class="arg">depth10</span></pre></div>
+    </div>
+    <div class="col">
+      <div class="box ap"><h3>Lo que sí va a Git</h3><ul><li><code>dvc.yaml</code>, <code>dvc.lock</code>, <code>params.yaml</code></li><li><code>metrics/metrics.json</code></li><li><code>plots/</code> (con <code>cache: false</code>)</li><li>Scripts en <code>src/</code></li></ul></div>
+      <div class="box ac" style="margin-top:var(--gap)"><h3>Lo que NO va a Git</h3><ul><li>Datos crudos y procesados</li><li>Modelos (van al remoto de DVC)</li><li><code>experiments/</code> (en .gitignore)</li><li><code>.dvc/cache/</code></li></ul></div>
+      <div class="box aa" style="margin-top:var(--gap)"><h3>DagsHub como alternativa</h3><p>Actúa como remoto de DVC + UI de MLflow. Cualquier colaborador ve los experimentos desde el navegador sin instalar nada.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 14 Resumen -->
+<div class="slide purple">
+  <div class="slide-num">14 / 14</div>
+  <span class="tag purple">Resumen</span>
+  <h2>DVC en tu investigación: lo esencial</h2>
+  <div class="grid3">
+    <div class="box at"><h3>📦 Datos</h3><ul><li><code>dvc add</code> para trackear</li><li><code>dvc push/pull</code> para compartir</li><li>El <code>.dvc</code> va a Git; el dato al remoto</li><li>Deduplicación automática por hash</li></ul></div>
+    <div class="box ap"><h3>⚙️ Pipeline</h3><ul><li>Scripts independientes por etapa</li><li><code>dvc.yaml</code> define el DAG</li><li><code>params.yaml</code> centraliza params</li><li><code>dvc repro</code> es idempotente</li></ul></div>
+    <div class="box ac"><h3>🔬 Experimentos</h3><ul><li><code>dvc exp run --name</code></li><li><code>archive_experiment.py</code> para acceso local</li><li><code>dvc exp show --csv</code> para comparar</li><li><code>dvc exp apply</code> restaura todo</li></ul></div>
+  </div>
+  <hr>
+  <div class="box ag" style="flex-shrink:0;margin-top:var(--gap)"><h3>Regla de oro</h3><p style="font-size:var(--t-md)">Si alguien clona tu repo y corre <code>dvc pull</code> + <code>dvc repro</code>, debe obtener exactamente los mismos resultados. Si no es posible, algo falta en el pipeline.</p></div>
+</div>
+
+<div id="controls">
+  <span id="hint">← → Space para navegar</span>
+  <span id="slide-counter">1 / 14</span>
+  <div class="nav-btns">
+    <button class="nav-btn" id="btn-prev" onclick="go(-1)" disabled>&#8592;</button>
+    <button class="nav-btn" id="btn-next" onclick="go(1)">&#8594;</button>
+  </div>
+</div>
+</div>
 <script>
-  const slides = document.querySelectorAll('.slide');
-  const total  = slides.length;
-  let cur = 0;
-
-  function go(dir) {
-    const next = cur + dir;
-    if (next < 0 || next >= total) return;
-    slides[cur].classList.remove('active');
-    cur = next;
-    slides[cur].classList.add('active');
-    document.getElementById('slide-counter').textContent = `${cur+1} / ${total}`;
-    document.getElementById('progress-fill').style.width = `${((cur+1)/total)*100}%`;
-    document.getElementById('btn-prev').disabled = cur === 0;
-    document.getElementById('btn-next').disabled = cur === total-1;
-  }
-
-  document.addEventListener('keydown', e => {
-    if (['ArrowRight','ArrowDown',' '].includes(e.key)) { e.preventDefault(); go(1); }
-    if (['ArrowLeft','ArrowUp'].includes(e.key))        { e.preventDefault(); go(-1); }
-  });
-
-  document.getElementById('progress-fill').style.width = `${(1/total)*100}%`;
+const slides=document.querySelectorAll('.slide'),total=slides.length;let cur=0;
+function go(dir){const n=cur+dir;if(n<0||n>=total)return;slides[cur].classList.remove('active');cur=n;slides[cur].classList.add('active');document.getElementById('slide-counter').textContent=`${cur+1} / ${total}`;document.getElementById('progress-fill').style.width=`${((cur+1)/total)*100}%`;document.getElementById('btn-prev').disabled=cur===0;document.getElementById('btn-next').disabled=cur===total-1;}
+document.addEventListener('keydown',e=>{if(['ArrowRight','ArrowDown',' '].includes(e.key)){e.preventDefault();go(1);}if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();go(-1);}});
+document.getElementById('progress-fill').style.width=`${(1/total)*100}%`;
 </script>
 </body>
 </html>
